@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="FeaturesTest/FeaturesTest.csproj" Id="4b1d822d-1373-4d97-9cbb-dbe410994ef7" />
+  <Project Path="Web/Web.csproj" Id="d5b4f983-115b-42ed-b0e6-3cda0316a574" />
+</Solution>

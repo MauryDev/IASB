@@ -1,0 +1,92 @@
+﻿@page "/service/informativo"
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
+    
+    <MudText Typo="Typo.h3" Color="Color.Primary" Class="mb-4"></MudText>
+    <MudText Typo="Typo.subtitle1" Class="mb-6">O seu guia semanal de notícias e eventos da igreja.</MudText>
+    
+    <MudDivider Class="my-6" />
+
+    <MudCard Elevation="25" Class="mb-8">
+        <MudCardHeader>
+            <MudText Typo="Typo.h5">Assista Agora</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            
+            <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
+                <iframe 
+                    style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"
+                    src="" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <MudText Typo="Typo.caption" Class="mt-2">Se a reprodução não iniciar, clique na janela do vídeo.</MudText>
+        </MudCardContent>
+    </MudCard>
+
+    <MudCard Elevation="5" Class="mb-8 mud-border-primary">
+        <MudCardContent Class="d-flex align-center justify-space-between">
+            <div class="d-flex flex-column">
+                <MudText Typo="Typo.h6">Baixe o Informativo (PDF)</MudText>
+                <MudText Typo="Typo.body2">Versão completa para leitura offline e compartilhamento.</MudText>
+            </div>
+            
+            <MudButton 
+                Variant="Variant.Filled" 
+                Color="Color.Info" 
+                StartIcon="@Icons.Material.Filled.Download" 
+                Href="@DownloadLink" 
+                Target="_blank"
+                >
+                Baixar (@DownloadFileSize)
+            </MudButton>
+
+        </MudCardContent>
+    </MudCard>
+
+    <div class="informacoes">
+        <MudText Typo="Typo.h4" Class="mb-3">Detalhes do Conteúdo</MudText>
+
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Nome do Informativo:</MudText>
+                <MudText Typo="Typo.body1">@NomeDetalhado</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Publicação:</MudText>
+                <MudText Typo="Typo.body1">@DataPublicacao.ToShortDateString() | Duração: @Duracao</MudText>
+            </MudItem>
+            
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Descrição:</MudText>
+                <MudText Typo="Typo.body1">@Descricao</MudText>
+            </MudItem>
+
+        </MudGrid>
+    </div>
+
+</MudContainer>
+
+@code {
+
+    // ----------------------------------------------------------------------
+    // PROPRIEDADES (Dados que você deve preencher/atualizar)
+    // ----------------------------------------------------------------------
+    
+    // 1. Dados do Vídeo
+    public string Duracao { get; set; } = "5 minutos e 12 segundos";
+
+    // 2. Dados do Download
+    public string DownloadLink { get; set; } = "/arquivos/informativo-semanal.pdf"; // MUDAR!
+    public string DownloadFileSize { get; set; } = "2.5 MB";
+
+    // 3. Dados Informativos
+    public string NomeDetalhado { get; set; } = "Visão da Semana - Edição Especial de Missões."; // MUDAR!
+    public DateTime DataPublicacao { get; set; } = DateTime.Today;
+    public string Descricao { get; set; }
+
+}

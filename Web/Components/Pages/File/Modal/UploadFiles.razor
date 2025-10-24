@@ -1,0 +1,72 @@
+﻿<MudDialog>
+    <TitleContent>
+        Carregar arquivos
+    </TitleContent>
+    <DialogContent>
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFileChanged">
+            <ActivatorContent>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CloudUpload">
+                    Carregar arquivos
+                </MudButton>
+            </ActivatorContent>
+        </MudFileUpload>
+        @if (files != null)
+        {
+            var len = files.Count;
+            <MudStack>
+                @for (var i = 0; i < len; i++)
+                {
+                    var icurrent = i;
+                    <MudInputString AdornmentAriaLabel="Nome" @bind-Value="filenames[icurrent]" @key="icurrent"  />
+                }
+            </MudStack>
+            
+        }
+        
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public Action<string, byte[]> OnFile { get; set; }
+
+    public IReadOnlyList<IBrowserFile> files { get; set; }
+    public string[] filenames { get; set; } = Array.Empty<string>();
+    public async Task OnFileChanged(IReadOnlyList<IBrowserFile> files)
+    {
+        this.files = files;
+        this.filenames = files.Select((e) => e.Name).ToArray();
+    }
+
+    private async Task Submit() {
+        if (files!=null)
+        {
+            var len = this.files.Count;
+            for (int i = 0; i < len; i++)
+            {
+                var file = files[i];
+                var namefile = filenames[i];
+                using Stream s = file.OpenReadStream(file.Size + 1);
+                byte[] b = new byte[s.Length];
+
+                await s.ReadAsync(b, 0, (int)s.Length);
+                OnFile?.Invoke(namefile, b);
+            }
+            MudDialog.Close(DialogResult.Ok(true));
+
+            
+        }
+        
+        
+
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

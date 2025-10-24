@@ -1,0 +1,221 @@
+﻿@page "/service/file"
+@inject Services.FileController fileController
+@inject IDialogService DialogService
+@inject NavigationManager navigationManager
+
+<PageTitle>Musica</PageTitle>
+<MudGrid>
+    <MudItem xs="9">
+        <MudInputString Style="width: 100%" @bind-Value="@PathToFind" />
+    </MudItem>
+    <MudItem xs="3">
+        <MudFab Class="mx-2" OnClick="OnSearchPath" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search"></MudFab>
+        @if (!string.IsNullOrWhiteSpace(PathCurrent))
+        {
+            <MudFab Class="mx-2" Color="Color.Primary" OnClick="OnParentSet" StartIcon="@Icons.Material.Filled.ArrowBack"></MudFab>
+        }
+    </MudItem>
+
+</MudGrid>
+
+<div class="mb-2">
+   
+    <MudButton Class="mx-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateFolder">Nova pasta</MudButton>
+    <MudButton Class="mx-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="UploadFiles">Carregar Arquivo</MudButton>
+</div>
+
+
+
+<MudSimpleTable Dense="true" Style="overflow-x: auto;">
+    <thead>
+        <tr>
+            <th>Nome</th>
+        </tr>
+    </thead>
+        
+    <tbody>
+        @{
+            var musics = fileController.GetMusics(PathCurrent);
+        }
+        @if (musics != null)
+        {
+            var musics2 = musics.Value;
+            @foreach (var folder in musics2.Item1)
+            {
+                var foldername = Path.GetFileName(folder);
+
+                <tr>
+                    <td>
+                        <MudMenu>
+                            <ActivatorContent>
+
+                                <MudIcon Icon="@Icons.Material.Filled.Folder" />
+                                <MudText>
+                                    @foldername
+                                </MudText>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <MudMenuItem Icon="@Icons.Material.Filled.FolderOpen"
+                                             Label="Abrir"
+                                             OnClick="() => OnOpenFolder(foldername)" />
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                             Label="Delete"
+                                             OnClick="() => OnDelete(foldername)" />
+                                <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                             Label="Rename"
+                                             OnClick="() => OnRename(foldername)" />
+                               
+                            </ChildContent>
+
+                        </MudMenu>
+
+                    </td>
+                </tr>
+
+            }
+            @foreach (var music in musics2.Item2)
+            {
+                var filename = Path.GetFileName(music);
+                <tr @key="music">
+                    <td>
+                        <MudMenu>
+                            <ActivatorContent>
+                                <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" />
+                                <MudText>
+                                    @filename
+                                </MudText>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <MudMenuItem Icon="@Icons.Material.Filled.FileOpen"
+                                             Label="Abrir"
+                                             OnClick="() => OnOpenFile(filename)" />
+                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
+                                Label="Delete"
+                                OnClick="() => OnDelete(filename)" />
+                                <MudMenuItem Icon="@Icons.Material.Filled.Edit"
+                                             Label="Rename"
+                                             OnClick="() => OnRename(filename)" />
+                                
+                            </ChildContent>
+                            
+                        </MudMenu>
+                       
+                        
+                    </td>
+                </tr>
+
+
+            }
+        }
+    </tbody>
+</MudSimpleTable>
+
+@code {
+    
+    public string? _pathCurrent { get; set; }
+    [SupplyParameterFromQuery(Name = "path")]
+    [Parameter]
+    public string? PathCurrent
+    {
+        get => _pathCurrent ?? string.Empty;
+        set
+        {
+            _pathCurrent = value;
+            PathToFind = value;
+        }
+    }
+
+    public string PathToFind { get; set; }
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        this.PathToFind = this.PathCurrent;
+    }
+    public async Task CreateFolder()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = await DialogService.ShowAsync<Modal.CreateFolder>("Criar pasta", options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            fileController.CreateDirectory(PathCurrent, (result.Data as string)!);
+
+        }
+    }
+    public void UploadFile(string filename, byte[] bytes)
+    {
+        fileController.Upload(PathCurrent, filename, bytes);
+
+    }
+    public async Task UploadFiles()
+    {
+        var parameters = new DialogParameters<Modal.UploadFiles>
+        {
+            { x => x.OnFile, UploadFile },
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = await DialogService.ShowAsync<Modal.UploadFiles>($"Carregar Arquivos", parameters, options);
+        var result = await dialog.Result;
+
+    }
+    public void OnDelete(string filename)
+    {
+        fileController.Delete(PathCurrent, filename);
+    }
+    public async Task OnRename(string filename)
+    {
+        var parameters = new DialogParameters<Modal.RenameItem>
+        {
+            { x => x.NameFile, filename},
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var dialog = await DialogService.ShowAsync<Modal.RenameItem>($"Renomear - {filename}", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            fileController.Rename(PathCurrent, filename,(result.Data as string)!);
+
+        }
+    }
+
+    public void OnOpenFolder(string foldername)
+    {
+        string newpath = PathCurrent == string.Empty ? foldername : $"{PathCurrent}/{foldername}";
+        var url = navigationManager.GetUriWithQueryParameter("path", newpath);
+
+        navigationManager.NavigateTo(url);
+    }
+    public void OnParentSet()
+    {
+        string? newpath = Path.GetDirectoryName(PathCurrent);
+        var url = navigationManager.GetUriWithQueryParameter("path", newpath);
+        navigationManager.NavigateTo(url);
+
+
+    }
+
+    public void OnOpenFile(string filename)
+    {
+        var filePath = fileController.GetFile(Path.Combine(PathCurrent,filename));
+        var psi = new System.Diagnostics.ProcessStartInfo(filePath)
+        {
+            // UseShellExecute must be true for the operating system
+            // to determine which application to use based on the file extension.
+            UseShellExecute = true
+        };
+
+        // 3. Start the process
+        System.Diagnostics.Process.Start(psi);
+    }
+
+    public void OnSearchPath()
+    {
+        var url = navigationManager.GetUriWithQueryParameter("path", PathToFind);
+        navigationManager.NavigateTo(url);
+    }
+
+
+}

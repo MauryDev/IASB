@@ -1,0 +1,31 @@
+﻿<MudDialog>
+    <TitleContent>
+        Renomear
+    </TitleContent>
+    <DialogContent>
+        <MudInputString @bind-Value="NewName" Label="Novo nome" Placeholder="Digite o nome"></MudInputString>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public string NameFile { get; set; }
+
+
+    
+    public string NewName { get; set; }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        NewName = NameFile;
+    }
+    private void Submit() => MudDialog.Close(DialogResult.Ok(NewName));
+
+    private void Cancel() => MudDialog.Cancel();
+}

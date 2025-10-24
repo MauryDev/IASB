@@ -1,0 +1,20 @@
+﻿<MudDialog>
+    <TitleContent>
+        Criar pasta
+    </TitleContent>
+    <DialogContent>
+        <MudInputString @bind-Value="NomeFolder" Label="Nome da pasta" Placeholder="Digite o nome da pasta"></MudInputString>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    public string NomeFolder { get; set; }
+    private void Submit() => MudDialog.Close(DialogResult.Ok(NomeFolder));
+
+    private void Cancel() => MudDialog.Cancel();
+}
