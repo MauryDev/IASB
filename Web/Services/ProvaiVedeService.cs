@@ -1,5 +1,6 @@
 ﻿using SharpYaml.Serialization;
 using System;
+using Web.View;
 
 namespace Web.Services;
 
@@ -15,7 +16,7 @@ public class ProvaiVedeService
     private readonly ILogger<InformativoService> _logger; // Para logs
     private const string CACHE_FOLDER_NAME = "ProvaiVede-Cache";
     private readonly string _cachedVideosPath; // Caminho absoluto para a pasta de cache
-    private static Uri BASEURLAPI = new("https://harmonious-piroshki-28fc2f.netlify.app/provai e vede/");
+    private static Uri BASEURLAPI = new("https://iasb.api.iasdbenedito.dedyn.io/provai e vede/");
 
     public ProvaiVedeService(
         HttpClient httpClient,
@@ -36,7 +37,7 @@ public class ProvaiVedeService
             _logger.LogInformation("Pasta de cache de vídeos criada em: {Path}", _cachedVideosPath);
         }
     }
-    public async Task<View.Informativo?> GetInfoLocal()
+    public async Task<View.ProvaiVede?> GetInfoLocal()
     {
         var localPath = Path.Combine(_cachedVideosPath, "provai-vede.yml");
         if (!File.Exists(localPath))
@@ -46,22 +47,23 @@ public class ProvaiVedeService
 
         var localContent = await File.ReadAllTextAsync(localPath);
         var serializer = new Serializer();
-        var informativo = serializer.Deserialize<View.Informativo>(localContent);
+        var provaiVede = serializer.Deserialize<View.ProvaiVede>(localContent);
 
-        return informativo;
+        return provaiVede;
     }
-    public async Task SetInfoLocal(View.Informativo informativo)
+    public async Task SetInfoLocal(View.ProvaiVede provaiVede)
     {
         var localPath = Path.Combine(_cachedVideosPath, "provai-vede.yml");
 
         var serializer = new Serializer();
 
-        await File.WriteAllTextAsync(localPath, serializer.Serialize(informativo));
         if (File.Exists(localPath))
         {
+            await File.WriteAllTextAsync(localPath, serializer.Serialize(provaiVede));
+
         }
     }
-    public async Task<View.Informativo?> GetInfoServer()
+    public async Task<View.ProvaiVede?> GetInfoServer()
     {
         var url = new Uri(BASEURLAPI, "index.yml");
         var response = await _httpClient.GetAsync(url);
@@ -72,27 +74,26 @@ public class ProvaiVedeService
         }
         var content = await response.Content.ReadAsStringAsync();
         var serializer = new Serializer();
-        var informativo = serializer.Deserialize<View.Informativo>(content);
-        return informativo;
+        var provaiVede = serializer.Deserialize<View.ProvaiVede>(content);
+        return provaiVede;
     }
-    public async Task<View.Informativo?> GetInfo()
+    public async Task<View.ProvaiVede?> GetInfo()
     {
         var cloud = await GetInfoServer();
         if (cloud == null)
         {
 
 
-            var localInformativo = await GetInfoLocal();
            
-            return localInformativo;
+            return await GetInfoLocal();
         } else
         {
-            var localInformativo = await GetInfoLocal();
+            var localProvaiVede = await GetInfoLocal();
 
-            if (localInformativo != null && cloud.Date != localInformativo.Date)
+            if (localProvaiVede != null && cloud.Date != localProvaiVede.Date)
             {
                 await SetInfoLocal(cloud);
-                DeleteCache(localInformativo);
+                DeleteCache(localProvaiVede);
             }
             else
             {
@@ -102,25 +103,25 @@ public class ProvaiVedeService
             return cloud;
         }
     }
-    public string? GetFileNameVideo(View.Informativo informativo)
+    public string? GetFileNameVideo(View.ProvaiVede provaiVede)
     {
-        var uri = new Uri(informativo.Url);
+        var uri = new Uri(provaiVede.Url);
         var path = uri.LocalPath;
         var filename = Path.GetFileName(path);
         return filename;
     }
-    public void DeleteCache(View.Informativo informativo)
+    public void DeleteCache(View.ProvaiVede provaiVede)
     {
-        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(informativo));
+        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(provaiVede));
         if (File.Exists(localPath))
         {
             File.Delete(localPath);
         }
     }
-    public bool PlayLocal(View.Informativo informativo)
+    public bool PlayLocal(View.ProvaiVede provaiVede)
     {
 
-        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(informativo));
+        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(provaiVede));
         if (File.Exists(localPath))
         {
             System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -133,40 +134,40 @@ public class ProvaiVedeService
         return false;
 
     }
-    public async Task DownloadVideo(View.Informativo informativo)
+    public async Task DownloadVideo(View.ProvaiVede provaiVede)
     {
-        var url = informativo.Url;
-        var filename = GetFileNameVideo(informativo);
+        var url = provaiVede.Url;
+        var filename = GetFileNameVideo(provaiVede);
         var stream = await _httpClient.GetStreamAsync(url);
         var localPath = Path.Combine(_cachedVideosPath, filename);
         using var fileStream = new FileStream(localPath, FileMode.Create, FileAccess.Write, FileShare.None);
         await stream.CopyToAsync(fileStream);
     }
-    public async Task Download(View.Informativo informativo, Func<string, Task>? OnMessage)
+    public async Task Download(View.ProvaiVede provaiVede, Func<string, Task>? OnMessage)
     {
-        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(informativo));
+        var localPath = Path.Combine(_cachedVideosPath, GetFileNameVideo(provaiVede));
         if (File.Exists(localPath))
             return;
         await OnMessage("Baixando o vídeo no servidor...");
 
         try
         {
-            await DownloadVideo(informativo);
+            await DownloadVideo(provaiVede);
         } catch { }
     }
-    public async Task Play(View.Informativo informativo,Func<string,Task> OnMessage)
+    public async Task Play(View.ProvaiVede provaiVede, Func<string,Task> OnMessage)
     {
         await OnMessage("Tentando abrir...");
-        if (PlayLocal(informativo))
+        if (PlayLocal(provaiVede))
             return;
         await OnMessage("Baixando o vídeo no servidor...");
 
         try
         {
-            await DownloadVideo(informativo);
+            await DownloadVideo(provaiVede);
             await OnMessage("Tentando abrir...");
 
-            PlayLocal(informativo);
+            PlayLocal(provaiVede);
         }
         catch { }
     }

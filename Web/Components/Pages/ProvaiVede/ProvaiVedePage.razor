@@ -2,7 +2,7 @@
 @inject Services.ProvaiVedeService provaiVedeService
 <PageTitle>Provai e Vede</PageTitle>
 <MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
-    @if (informativo == null)
+    @if (provaiVede == null)
     {
         <MudPaper Class="pa-6 d-flex flex-column align-center">
             <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
@@ -11,7 +11,7 @@
     }
     else
     {
-        <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-2">@informativo.Name</MudText>
+        <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-2">@provaiVede.Name</MudText>
 
         <MudCard Elevation="10" Class="mb-6">
             <MudCardHeader>
@@ -39,27 +39,27 @@
                 <MudGrid>
                     <MudItem xs="12" sm="6">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Nome do Informativo</MudText>
-                        <MudText Typo="Typo.body1">@informativo.Name</MudText>
+                        <MudText Typo="Typo.body1">@provaiVede.Name</MudText>
                     </MudItem>
 
                     <MudItem xs="12" sm="6">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Publicação</MudText>
-                        <MudText Typo="Typo.body1">@informativo.Date</MudText>
+                        <MudText Typo="Typo.body1">@provaiVede.Date</MudText>
                     </MudItem>
 
                     <MudItem xs="12" sm="6">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Duração</MudText>
-                        <MudText Typo="Typo.body1">@informativo.Duration</MudText>
+                        <MudText Typo="Typo.body1">@provaiVede.Duration</MudText>
                     </MudItem>
 
                     <MudItem xs="12" sm="6">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Tamanho</MudText>
-                        <MudText Typo="Typo.body1">@informativo.Size</MudText>
+                        <MudText Typo="Typo.body1">@provaiVede.Size</MudText>
                     </MudItem>
 
                     <MudItem xs="12" Class="mt-2">
                         <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Descrição</MudText>
-                        <MudText Typo="Typo.body1">@informativo.Description</MudText>
+                        <MudText Typo="Typo.body1">@provaiVede.Description</MudText>
                     </MudItem>
                 </MudGrid>
             </MudCardContent>
@@ -73,18 +73,17 @@
 
 @code {
     string text { get; set; } = "Carregando...";
-    View.Informativo? informativo { get; set; }
+    View.ProvaiVede? provaiVede { get; set; }
     bool isDisable { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            informativo = await provaiVedeService.GetInfo();
+            provaiVede = await provaiVedeService.GetInfo();
         }
         catch (Exception ex)
         {
-            // falha ao obter informativo — mantém informativo nulo (UI exibirá mensagem de carregando/erro)
 
             Console.Error.WriteLine($"Erro ao carregar provai e vede: {ex.Message}");
         }
@@ -98,7 +97,7 @@
             isDisable = true;
             text = "Carregando...";
             await this.InvokeAsync(StateHasChanged);
-            await provaiVedeService.Play(informativo, OnChangedText);
+            await provaiVedeService.Play(provaiVede, OnChangedText);
             isDisable = false;
             await this.InvokeAsync(StateHasChanged);
 
@@ -119,7 +118,7 @@
             isDisable = true;
             await this.InvokeAsync(StateHasChanged);
 
-            await provaiVedeService.Download(informativo, OnChangedText);
+            await provaiVedeService.Download(provaiVede, OnChangedText);
             isDisable = false;
             await this.InvokeAsync(StateHasChanged);
 

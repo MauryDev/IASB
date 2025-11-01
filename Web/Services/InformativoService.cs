@@ -18,7 +18,7 @@ public class InformativoService
     private readonly ILogger<InformativoService> _logger; // Para logs
     private const string CACHE_FOLDER_NAME = "Informativo-Cache";
     private readonly string _cachedVideosPath; // Caminho absoluto para a pasta de cache
-    private static Uri BASEURLAPI = new("https://harmonious-piroshki-28fc2f.netlify.app/informativo/");
+    private static Uri BASEURLAPI = new("https://iasb.api.iasdbenedito.dedyn.io/informativo/");
     public InformativoService(
         HttpClient httpClient,
         IWebHostEnvironment webHostEnvironment,
