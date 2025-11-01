@@ -1,4 +1,14 @@
 ﻿<MudNavMenu>
-    <MudNavLink Href="/" Match="NavLinkMatch.All">Dashboard</MudNavLink>
-    <MudNavLink Href="/service/musics" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.LibraryMusic">Músicas</MudNavLink>
+    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+
+    <MudNavGroup Title="Recursos" Icon="@Icons.Material.Filled.Category">
+        <MudNavLink Href="/service/informativo" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Article">Informativo</MudNavLink>
+        <MudNavLink Href="/service/provaivede" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Visibility">Provai e vede</MudNavLink>
+        <MudNavLink Href="/service/youtube" Match="NavLinkMatch.Prefix" Icon="@Icons.Custom.Brands.YouTube">Provai e vede</MudNavLink>
+
+    </MudNavGroup>
+
+    <MudNavGroup Title="Gerenciamento" Icon="@Icons.Material.Filled.FolderShared">
+        <MudNavLink Href="/service/filesystem" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Folder">Arquivos</MudNavLink>
+    </MudNavGroup>
 </MudNavMenu>

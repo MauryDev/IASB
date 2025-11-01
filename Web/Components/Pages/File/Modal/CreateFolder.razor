@@ -1,20 +1,48 @@
 ﻿<MudDialog>
     <TitleContent>
-        Criar pasta
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.CreateNewFolder" Class="mr-3 mb-n1" />
+            Criar Nova Pasta
+        </MudText>
     </TitleContent>
     <DialogContent>
-        <MudInputString @bind-Value="NomeFolder" Label="Nome da pasta" Placeholder="Digite o nome da pasta"></MudInputString>
+        <MudInputString @bind-Value="NomeFolder"
+                        Label="Nome da pasta"
+                        Placeholder="Digite o nome da nova pasta"
+                        Required="true"
+                        RequiredError="O nome da pasta é obrigatório!"
+                        Immediate="true"
+                        Validation="@(new Func<string, IEnumerable<string>>(ValidateFolderName))" />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancelar</MudButton>
         <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
     </DialogActions>
 </MudDialog>
+
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
-    public string NomeFolder { get; set; }
-    private void Submit() => MudDialog.Close(DialogResult.Ok(NomeFolder));
+
+    public string NomeFolder { get; set; } = string.Empty;
+
+    private IEnumerable<string> ValidateFolderName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            yield return "O nome da pasta não pode ser vazio.";
+        if (name.Any(c => Path.GetInvalidFileNameChars().Contains(c)))
+            yield return "O nome da pasta contém caracteres inválidos.";
+    }
+
+    private void Submit()
+    {
+        if (ValidateFolderName(NomeFolder).Count() == 0)
+        {
+            MudDialog.Close(DialogResult.Ok(NomeFolder));
+
+        }
+
+    }
 
     private void Cancel() => MudDialog.Cancel();
 }

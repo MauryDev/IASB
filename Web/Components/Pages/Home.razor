@@ -1,5 +1,24 @@
 ﻿@page "/"
+@inject NavigationManager Navigation
+
 <PageTitle>Home</PageTitle>
 
-<h1>Bem-Vindo ao gerenciamento do IASB</h1>
+<MudContainer MaxWidth="MaxWidth.Large" Class="my-8">
+    <MudText Typo="Typo.h3" Align="Align.Center" Color="Color.Primary" Class="mb-6">Bem-Vindo ao Gerenciamento do IASB</MudText>
+    <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-10">Explore as funcionalidades principais do sistema.</MudText>
+    <Web.Components.Layout.ServiceList Services="ServiceList" />
+</MudContainer>
+
+@code {
+    public static View.ServiceInfo[] ServiceList = [
+        new View.ServiceInfo("Informativo","/img/informativo.jpg", "Abra ou baixe o informativo da semana.", "/service/informativo","Explorar"),
+        new View.ServiceInfo("Provai e Vede","/img/provaivede.jpg", "Provai e vede da semana.", "/service/provaivede","Explorar"),
+        new View.ServiceInfo("Gerenciador de Arquivos", "/img/sistemaarquivo.png", "Organize e gerencie seus arquivos e documentos de forma eficiente.", "/service/filesystem","Acessar Arquivos"),
+        new View.ServiceInfo("Youtube Player", "/img/Youtube_logo.png", "Função para abrir vídeo do youtube.", "/service/youtube","Explorar")
+    ];
+    private Action NavigateTo(string path)
+    {
+        return () => Navigation.NavigateTo(path);
+    }
+}
 

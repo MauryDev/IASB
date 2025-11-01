@@ -1,31 +1,63 @@
 ﻿<MudDialog>
     <TitleContent>
-        Renomear
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-3 mb-n1" />
+            Renomear Item
+        </MudText>
     </TitleContent>
     <DialogContent>
-        <MudInputString @bind-Value="NewName" Label="Novo nome" Placeholder="Digite o nome"></MudInputString>
+        <MudText Typo="Typo.body2" Class="mb-4">Renomeie o item selecionado:</MudText>
+        <MudForm @ref="@_form" NoValidate="true">
+            <MudInputString @bind-Value="NewName"
+                            Label="Novo nome"
+                            Placeholder="Digite o novo nome"
+                            Required="true"
+                            RequiredError="O novo nome é obrigatório!"
+                            Immediate="true"
+                            Validation="@(new Func<string, IEnumerable<string>>(ValidateNewName))" />
+        </MudForm>
+        <MudText Typo="Typo.caption" Class="mt-2 text-center text-primary">Nome atual: <span class="font-weight-bold">@NameFile</span></MudText>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancelar</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!_form?.IsValid ?? true || NewName == NameFile)">OK</MudButton>
     </DialogActions>
 </MudDialog>
+
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
     [Parameter]
-    public string NameFile { get; set; }
+    public string NameFile { get; set; } = string.Empty;
 
+    private MudForm? _form;
 
-    
-    public string NewName { get; set; }
+    public string NewName { get; set; } = string.Empty;
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
         NewName = NameFile;
     }
-    private void Submit() => MudDialog.Close(DialogResult.Ok(NewName));
+
+    private IEnumerable<string> ValidateNewName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            yield return "O novo nome não pode ser vazio.";
+        if (name.Any(c => Path.GetInvalidFileNameChars().Contains(c)))
+            yield return "O nome contém caracteres inválidos.";
+        if (name.Equals(NameFile, StringComparison.OrdinalIgnoreCase))
+            yield return "O novo nome é idêntico ao nome atual.";
+    }
+
+    private void Submit()
+    {
+        _form?.Validate();
+        if (_form?.IsValid == true)
+        {
+            MudDialog.Close(DialogResult.Ok(NewName));
+        }
+    }
 
     private void Cancel() => MudDialog.Cancel();
 }

@@ -1,0 +1,154 @@
+﻿@inject Services.FileService fileController
+@using System.IO
+@using System.Threading.Tasks
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Search" Class="mr-3 mb-n1" />
+            Buscar Arquivos e Pastas
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudInputString Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.Search"
+                        @bind-Value="SearchTerm"
+                        Label="Termo de Busca"
+                        Placeholder="Digite o nome do item ou padrão (ex: arquivo)"
+                        Clearable="true"
+                        OnAdornmentClick="OnSearch"
+                        OnKeyUp="OnSearchKeyUp" />
+
+        @if (_isLoading)
+        {
+            <MudOverlay Visible="true" DarkenBackground="false" Absolute="true" Class="d-flex flex-column align-center justify-center py-4">
+                <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Class="mt-2">Buscando...</MudText>
+            </MudOverlay>
+        }
+        else if (!_searchPerformed)
+        {
+            <MudPaper Class="mt-4 pa-4 text-center" Elevation="1">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum termo de busca inserido. Digite algo e clique na lupa ou Enter para buscar.</MudText>
+            </MudPaper>
+        }
+        else if (SearchResults == null || (!SearchResults.Value.Folders.Any() && !SearchResults.Value.Files.Any()))
+        {
+            <MudPaper Class="mt-4 pa-4 text-center" Elevation="1">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum resultado encontrado para "@SearchTerm".</MudText>
+            </MudPaper>
+        }
+        else
+        {
+            <MudCard Class="mt-4 pa-3" Elevation="0">
+                <MudList T="string"  Dense="true">
+                    @if (SearchResults.Value.Folders.Any())
+                    {
+                        <MudListSubheader>Pastas Encontradas</MudListSubheader>
+                        @foreach (var folder in SearchResults.Value.Folders)
+                        {
+                            <MudListItem OnClick="() => OnSelectItem(folder)">
+                                <ChildContent>
+                                    <MudTooltip Text="@GetRelativePath(folder)">
+                                        <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Class="mr-2" />
+                                        <MudText Inline Typo="Typo.body1">@Path.GetFileName(folder)</MudText>
+                                    </MudTooltip>
+                                </ChildContent>
+                            </MudListItem>
+                        }
+                    }
+
+                    @if (SearchResults.Value.Files.Any())
+                    {
+                        <MudListSubheader Class="mt-4">Arquivos Encontrados</MudListSubheader>
+                        @foreach (var file in SearchResults.Value.Files)
+                        {
+                            <MudListItem OnClick="() => OnSelectItem(file)">
+                                <ChildContent>
+                                    <MudTooltip Text="@GetRelativePath(file)">
+
+                                        <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Info" Class="mr-2" />
+                                        <MudText Inline Typo="Typo.body1">@Path.GetFileName(file)</MudText>
+                                    </MudTooltip>
+                                </ChildContent>
+                            </MudListItem>
+                        }
+                    }
+                </MudList>
+            </MudCard>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        @* Optionally "Open Selected" button could be added if multi-select or specific action needed *@
+        @* <MudButton Color="Color.Primary" OnClick="CloseWithSelected">Selecionar</MudButton> *@
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string CurrentPath { get; set; } = string.Empty;
+
+    private string SearchTerm { get; set; } = string.Empty;
+    private (IEnumerable<string> Folders, IEnumerable<string> Files)? SearchResults { get; set; }
+    private bool _isLoading = false;
+    private bool _searchPerformed = false;
+    void OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            OnSearch();
+        }
+    }
+    private void OnSearch()
+    {
+        if (string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            _searchPerformed = false;
+            SearchResults = null;
+            return;
+        }
+
+        _isLoading = true;
+        _searchPerformed = true;
+        SearchResults = null; // Clear previous results
+        StateHasChanged();
+
+        try
+        {
+            // SearchItems returns full paths.
+            var result = fileController.SearchItems(CurrentPath, SearchTerm);
+            if (result != null)
+            {
+                SearchResults = result.Value;
+            }
+            else
+            {
+                SearchResults = (new List<string>(), new List<string>());
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error during search: {ex.Message}");
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+    public string GetRelativePath(string path)
+    {
+        return Path.GetRelativePath(fileController.GetPathInMusic(CurrentPath), path);
+
+    }
+    private void OnSelectItem(string selectedItemFullPath)
+    {
+        var selectItem = GetRelativePath(selectedItemFullPath);
+        MudDialog.Close(DialogResult.Ok(selectItem));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

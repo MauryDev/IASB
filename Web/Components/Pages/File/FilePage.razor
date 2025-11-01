@@ -1,118 +1,133 @@
-﻿@page "/service/file"
-@inject Services.FileController fileController
+﻿@page "/service/filesystem"
+@inject Services.FileService fileService
 @inject IDialogService DialogService
 @inject NavigationManager navigationManager
+@using Web.Utils
+<PageTitle>Gerenciador de Arquivos</PageTitle>
 
-<PageTitle>Musica</PageTitle>
-<MudGrid>
-    <MudItem xs="9">
-        <MudInputString Style="width: 100%" @bind-Value="@PathToFind" />
+@* Top bar for path navigation and actions *@
+<MudGrid Spacing="2">
+    <MudItem xs="10">
+        <MudInput Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                  @bind-Value="@PathToFind"
+                  Placeholder="Buscar caminho..."
+                  Variant="Variant.Outlined"
+                  Class="flex-grow-1"
+                  OnAdornmentClick="OnSearchPath"
+                  Style="width: 100%"
+                  OnKeyUp="@((e) => { if (e.Key == "Enter") OnSearchPath(); })" />
     </MudItem>
-    <MudItem xs="3">
-        <MudFab Class="mx-2" OnClick="OnSearchPath" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search"></MudFab>
-        @if (!string.IsNullOrWhiteSpace(PathCurrent))
+    <MudItem xs="2">
+        @if (!string.IsNullOrWhiteSpace(PathCurrent) && PathCurrent != "/")
         {
-            <MudFab Class="mx-2" Color="Color.Primary" OnClick="OnParentSet" StartIcon="@Icons.Material.Filled.ArrowBack"></MudFab>
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Primary" OnClick="OnParentSet" Class="ml-2" />
         }
     </MudItem>
 
 </MudGrid>
-
-<div class="mb-2">
-   
-    <MudButton Class="mx-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="CreateFolder">Nova pasta</MudButton>
-    <MudButton Class="mx-2" Variant="Variant.Filled" Color="Color.Primary" OnClick="UploadFiles">Carregar Arquivo</MudButton>
+<div class="d-flex flex-wrap gap-4 mt-2">
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CreateNewFolder" OnClick="CreateFolder" Class="ml-2">
+        Nova Pasta
+    </MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.UploadFile" OnClick="UploadFiles" Class="ml-2">
+        Carregar Arquivo
+    </MudButton>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Search" OnClick="SearchItems" Class="ml-2">
+        Procurar Itens
+    </MudButton>
+    
 </div>
 
+@if (!string.IsNullOrEmpty(PathCurrent) && PathCurrent != "/")
+{
+    <MudBreadcrumbs Items="_pathSegments" Separator=">">
+        <ItemTemplate Context="item">
+            <MudLink  Href="@item.Href">@item.Text</MudLink>
+        </ItemTemplate>
+    </MudBreadcrumbs>
+}
+else
+{
+    <MudBreadcrumbs Items="@(new List<BreadcrumbItem> { new BreadcrumbItem("Root", "/service/filesystem", false) })" Separator=">">
+        <ItemTemplate Context="item">
+            <MudLink Href="@item.Href">@item.Text</MudLink>
+        </ItemTemplate>
+    </MudBreadcrumbs>
+}
 
+<MudOverlay Visible="@_isLoading" DarkBackground="true" Absolute="true">
+    <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+    <MudText Typo="Typo.body1" Class="mt-4">Carregando conteúdo...</MudText>
+</MudOverlay>
 
-<MudSimpleTable Dense="true" Style="overflow-x: auto;">
-    <thead>
-        <tr>
-            <th>Nome</th>
-        </tr>
-    </thead>
-        
-    <tbody>
-        @{
-            var musics = fileController.GetMusics(PathCurrent);
-        }
-        @if (musics != null)
+@if (_filesAndFolders == null && !_isLoading)
+{
+    <MudAlert Severity="Severity.Info" Class="my-4">Nenhum conteúdo encontrado ou erro ao carregar.</MudAlert>
+}
+else if (!_isLoading)
+{
+    <MudList T="string" Class="mt-4">
+        @if (_filesAndFolders!.Item1.Any())
         {
-            var musics2 = musics.Value;
-            @foreach (var folder in musics2.Item1)
+            <MudListSubheader>Pastas</MudListSubheader>
+            @foreach (var folder in _filesAndFolders.Item1)
             {
                 var foldername = Path.GetFileName(folder);
+                <MudListItem OnClick="DelegateHelper.Wrap(OnOpenFolder,foldername)" Class="hover-highlight">
+                    
+                    <MudIcon Style="vertical-align: middle;" Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Class="mr-2" />
+                    <MudText Inline="true" Typo="Typo.body1">@foldername</MudText>
+                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Style="vertical-align: middle" Icon="@Icons.Material.Filled.MoreVert">
+                        <MudMenuItem OnClick="DelegateHelper.Wrap(OnOpenFolder, foldername)">Abrir</MudMenuItem>
+                        <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnRename, foldername)">Renomear</MudMenuItem>
+                        <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnDelete, foldername)">Excluir</MudMenuItem>
 
-                <tr>
-                    <td>
-                        <MudMenu>
-                            <ActivatorContent>
+                        <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnMoveItem,foldername)">Mover</MudMenuItem>
 
-                                <MudIcon Icon="@Icons.Material.Filled.Folder" />
-                                <MudText>
-                                    @foldername
-                                </MudText>
-                            </ActivatorContent>
-                            <ChildContent>
-                                <MudMenuItem Icon="@Icons.Material.Filled.FolderOpen"
-                                             Label="Abrir"
-                                             OnClick="() => OnOpenFolder(foldername)" />
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                             Label="Delete"
-                                             OnClick="() => OnDelete(foldername)" />
-                                <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                             Label="Rename"
-                                             OnClick="() => OnRename(foldername)" />
-                               
-                            </ChildContent>
-
-                        </MudMenu>
-
-                    </td>
-                </tr>
-
-            }
-            @foreach (var music in musics2.Item2)
-            {
-                var filename = Path.GetFileName(music);
-                <tr @key="music">
-                    <td>
-                        <MudMenu>
-                            <ActivatorContent>
-                                <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" />
-                                <MudText>
-                                    @filename
-                                </MudText>
-                            </ActivatorContent>
-                            <ChildContent>
-                                <MudMenuItem Icon="@Icons.Material.Filled.FileOpen"
-                                             Label="Abrir"
-                                             OnClick="() => OnOpenFile(filename)" />
-                                <MudMenuItem Icon="@Icons.Material.Filled.Delete"
-                                Label="Delete"
-                                OnClick="() => OnDelete(filename)" />
-                                <MudMenuItem Icon="@Icons.Material.Filled.Edit"
-                                             Label="Rename"
-                                             OnClick="() => OnRename(filename)" />
-                                
-                            </ChildContent>
-                            
-                        </MudMenu>
-                       
-                        
-                    </td>
-                </tr>
-
-
+                    </MudMenu>
+                   
+                </MudListItem>
             }
         }
-    </tbody>
-</MudSimpleTable>
+
+        @if (_filesAndFolders!.Item2.Any())
+        {
+            <MudListSubheader Class="mt-4">Arquivos</MudListSubheader>
+            @foreach (var file in _filesAndFolders.Item2)
+            {
+                var filename = Path.GetFileName(file);
+                <MudListItem OnClick="DelegateHelper.Wrap(OnOpenFile, filename)" Class="hover-highlight">
+                    <ChildContent>
+                        <MudIcon Style="vertical-align: middle" Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Info" Class="mr-2" />
+                        <MudText Inline Typo="Typo.body1">@filename</MudText>
+                        <MudMenu Style="vertical-align: middle" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Icon="@Icons.Material.Filled.MoreVert">
+                            <MudMenuItem OnClick="DelegateHelper.Wrap(OnOpenFile,filename)">Abrir</MudMenuItem>
+                            <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnRename,filename)">Renomear</MudMenuItem>
+                            <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnDelete,filename)">Excluir</MudMenuItem>
+                            <MudMenuItem Target="_blank" Href="@GetDownloadUrl(filename)">Download</MudMenuItem>
+                            <MudMenuItem OnClick="DelegateHelper.WrapAsync(CopyFile, filename)">Copiar</MudMenuItem>
+                            <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnMoveItem, filename)">Mover</MudMenuItem>
+
+                        </MudMenu>
+                    </ChildContent>
+                   
+                </MudListItem>
+            }
+        }
+
+        @if (!_filesAndFolders.Item1.Any() && !_filesAndFolders.Item2.Any() && !string.IsNullOrWhiteSpace(PathCurrent))
+        {
+            <MudAlert Severity="Severity.Normal" Class="my-4">Esta pasta está vazia.</MudAlert>
+        }
+    </MudList>
+}
 
 @code {
-    
-    public string? _pathCurrent { get; set; }
+
+    private Tuple<IEnumerable<string>, IEnumerable<string>>? _filesAndFolders;
+    private bool _isLoading = false;
+
+    public string? _pathCurrent;
     [SupplyParameterFromQuery(Name = "path")]
     [Parameter]
     public string? PathCurrent
@@ -120,34 +135,115 @@
         get => _pathCurrent ?? string.Empty;
         set
         {
-            _pathCurrent = value;
-            PathToFind = value;
+            if (_pathCurrent != value)
+            {
+                _pathCurrent = value;
+                PathToFind = value;
+                LoadFilesAndFolders(); // Reload files when path changes
+            }
         }
     }
 
-    public string PathToFind { get; set; }
+    public string PathToFind { get; set; } = string.Empty;
+    public List<BreadcrumbItem> _pathSegments = new();
+
     protected override void OnInitialized()
     {
-        base.OnInitialized();
-        this.PathToFind = this.PathCurrent;
+        PathToFind = this.PathCurrent; // Initialize once
+        LoadFilesAndFolders();
     }
+
+    // New method to load files and folders and update UI
+    private void LoadFilesAndFolders()
+    {
+
+        _isLoading = true;
+        _filesAndFolders = null; // Clear previous content
+        StateHasChanged(); // Show loading indicator
+
+        try
+        {
+            var result = fileService.GetItems(PathCurrent);
+            if (result != null)
+            {
+                _filesAndFolders = new(result.Value.Item1.ToList(),result.Value.Item2.ToList());
+            }
+            else
+            {
+                _filesAndFolders = new(System.Linq.Enumerable.Empty<string>(), System.Linq.Enumerable.Empty<string>());
+            }
+            UpdateBreadcrumbs(PathCurrent);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao carregar arquivos e pastas: {ex.Message}");
+            // Optionally, show a MudSnackbar error here
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged(); // Hide loading indicator and show content/error
+        }
+    }
+
+    private void UpdateBreadcrumbs(string? currentPath)
+    {
+        _pathSegments = new List<BreadcrumbItem>();
+        _pathSegments.Add(new BreadcrumbItem("Root", "/service/filesystem", false));
+
+        if (!string.IsNullOrWhiteSpace(currentPath) && currentPath != "/")
+        {
+            var segments = currentPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            string cumulativePath = "";
+            foreach (var segment in segments)
+            {
+                cumulativePath = Path.Combine(cumulativePath, segment).Replace("\\", "/");
+                _pathSegments.Add(new BreadcrumbItem(segment, navigationManager.GetUriWithQueryParameter("path", cumulativePath), false));
+            }
+        }
+    }
+
+    
+    private async Task ExecuteFileOperation(Func<Task> operation)
+    {
+        _isLoading = true;
+        StateHasChanged();
+        try
+        {
+            await operation();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro na operação de arquivo: {ex.Message}");
+            // Optionally, show a MudSnackbar error here
+        }
+        finally
+        {
+            // Reload files after operation
+            LoadFilesAndFolders();
+        }
+    }
+
     public async Task CreateFolder()
     {
         var options = new DialogOptions { CloseOnEscapeKey = true };
-
         var dialog = await DialogService.ShowAsync<Modal.CreateFolder>("Criar pasta", options);
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            fileController.CreateDirectory(PathCurrent, (result.Data as string)!);
-
+            await ExecuteFileOperation(() =>
+            {
+                fileService.CreateDirectory(PathCurrent, (result.Data as string)!);
+                return Task.CompletedTask;
+            });
         }
     }
+
     public void UploadFile(string filename, byte[] bytes)
     {
-        fileController.Upload(PathCurrent, filename, bytes);
-
+        fileService.Upload(PathCurrent, filename, bytes);
     }
+
     public async Task UploadFiles()
     {
         var parameters = new DialogParameters<Modal.UploadFiles>
@@ -158,12 +254,32 @@
 
         var dialog = await DialogService.ShowAsync<Modal.UploadFiles>($"Carregar Arquivos", parameters, options);
         var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            // After upload dialog closes, reload to see new files
+            LoadFilesAndFolders();
+        }
+    }
 
-    }
-    public void OnDelete(string filename)
+    public async Task OnDelete(string name)
     {
-        fileController.Delete(PathCurrent, filename);
+        bool? result = await DialogService.ShowMessageBox(
+            "Confirmação de Exclusão",
+            $"Tem certeza que deseja excluir '{name}'? Esta ação não pode ser desfeita.",
+            yesText: "Excluir", cancelText: "Cancelar",
+            options: new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall }
+        );
+
+        if (result == true) // User clicked "Excluir"
+        {
+            await ExecuteFileOperation(() =>
+            {
+                fileService.Delete(PathCurrent, name);
+                return Task.CompletedTask;
+            });
+        }
     }
+
     public async Task OnRename(string filename)
     {
         var parameters = new DialogParameters<Modal.RenameItem>
@@ -176,39 +292,49 @@
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            fileController.Rename(PathCurrent, filename,(result.Data as string)!);
-
+            await ExecuteFileOperation(() =>
+            {
+                fileService.Rename(PathCurrent, filename, (result.Data as string)!);
+                return Task.CompletedTask;
+            });
         }
+        
     }
 
     public void OnOpenFolder(string foldername)
     {
-        string newpath = PathCurrent == string.Empty ? foldername : $"{PathCurrent}/{foldername}";
+        string newpath = string.IsNullOrWhiteSpace(PathCurrent) ? foldername : Path.Combine(PathCurrent, foldername).Replace("\\", "/");
         var url = navigationManager.GetUriWithQueryParameter("path", newpath);
-
         navigationManager.NavigateTo(url);
     }
+
     public void OnParentSet()
     {
-        string? newpath = Path.GetDirectoryName(PathCurrent);
+        string? parentPath = Path.GetDirectoryName(PathCurrent);
+        // Path.GetDirectoryName might return null or empty string for root.
+        // We want to navigate to the effective "root" if it's currently a top-level folder.
+        var newpath = string.IsNullOrWhiteSpace(parentPath) ? "" : parentPath.Replace("\\", "/"); // Ensure URL-friendly path
         var url = navigationManager.GetUriWithQueryParameter("path", newpath);
         navigationManager.NavigateTo(url);
-
-
     }
 
     public void OnOpenFile(string filename)
     {
-        var filePath = fileController.GetFile(Path.Combine(PathCurrent,filename));
-        var psi = new System.Diagnostics.ProcessStartInfo(filePath)
+        try
         {
-            // UseShellExecute must be true for the operating system
-            // to determine which application to use based on the file extension.
-            UseShellExecute = true
-        };
-
-        // 3. Start the process
-        System.Diagnostics.Process.Start(psi);
+            var fullPathToFile = Path.Combine(PathCurrent, filename).Replace("\\", "/"); // Ensure correct path separator
+            var filePath = fileService.GetFile(fullPathToFile); // This should return the absolute path to the actual file
+            var psi = new System.Diagnostics.ProcessStartInfo(filePath)
+            {
+                UseShellExecute = true
+            };
+            System.Diagnostics.Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro ao abrir arquivo: {ex.Message}");
+            // Optionally, show a MudSnackbar error here
+        }
     }
 
     public void OnSearchPath()
@@ -216,6 +342,75 @@
         var url = navigationManager.GetUriWithQueryParameter("path", PathToFind);
         navigationManager.NavigateTo(url);
     }
+    public async Task SearchItems()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<Modal.SearchFile>
+        {
+            { x => x.CurrentPath, PathCurrent },
+        };
+        var dialog = await DialogService.ShowAsync<Modal.SearchFile>("Procurar Itens", parameters, options);
+        var res = await dialog.Result;
+        if (!res.Canceled)
+        {
+            var data = res.Data as string;
+            var fullpath = Path.Combine(PathCurrent,data);
 
+            if (fileService.IsFile(fullpath))
+            {
+                var filePath = fileService.GetFile(fullpath); // This should return the absolute path to the actual file
+                var psi = new System.Diagnostics.ProcessStartInfo(filePath)
+                {
+                    UseShellExecute = true
+                };
+                System.Diagnostics.Process.Start(psi);
+            } else if (fileService.IsDirectory(fullpath))
+            {
+                var url = navigationManager.GetUriWithQueryParameter("path", fullpath);
+                navigationManager.NavigateTo(url);
+            }
+        }
+
+
+    }
+    public string GetDownloadUrl(string filename)
+    {
+        return $"api/file/download?path={Uri.EscapeDataString(PathCurrent)}&filename={Uri.EscapeDataString(filename)}";
+    }
+    public async Task OpenFolderDialog(Func<string,Task> onSelect)
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<Modal.FolderSelect>
+            {
+                { x => x.PathCurrent, PathCurrent },
+            };
+        var dialog = await DialogService.ShowAsync<Modal.FolderSelect>("Procurar Pasta", parameters, options);
+        var res = await dialog.Result;
+        if (!res.Canceled)
+        {
+            var destinationPath = res.Data as string;
+            await onSelect(destinationPath);
+        }
+    }
+
+    public async Task CopyFile(string filename)
+    {
+        await OpenFolderDialog(async (destinationPath) =>
+        {
+            fileService.Copy(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
+            await this.InvokeAsync(this.StateHasChanged);
+        });
+        
+    }
+
+    public async Task OnMoveItem(string filename)
+    {
+        await OpenFolderDialog(async (destinationPath) =>
+        {
+            fileService.Move(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
+            await this.InvokeAsync(this.StateHasChanged);
+        });
+
+    }
 
 }

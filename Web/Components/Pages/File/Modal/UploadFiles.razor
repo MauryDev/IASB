@@ -1,71 +1,121 @@
-﻿<MudDialog>
+﻿@using System.IO
+
+<MudDialog>
     <TitleContent>
-        Carregar arquivos
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Class="mr-3 mb-n1" />
+            Carregar Arquivos
+        </MudText>
     </TitleContent>
     <DialogContent>
-        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFileChanged">
+        <MudText Typo="Typo.body2" Class="mb-4">Selecione um ou mais arquivos para carregar.</MudText>
+        <MudFileUpload T="IReadOnlyList<IBrowserFile>" FilesChanged="OnFileChanged" Multiple="true">
             <ActivatorContent>
-                <MudButton Variant="Variant.Filled"
+                <MudButton HtmlTag="label"
+                           Variant="Variant.Filled"
                            Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.CloudUpload">
-                    Carregar arquivos
+                           StartIcon="@Icons.Material.Filled.AttachFile">
+                    Selecionar Arquivos
                 </MudButton>
             </ActivatorContent>
         </MudFileUpload>
-        @if (files != null)
+
+        @if (files != null && files.Any())
         {
-            var len = files.Count;
-            <MudStack>
-                @for (var i = 0; i < len; i++)
-                {
-                    var icurrent = i;
-                    <MudInputString AdornmentAriaLabel="Nome" @bind-Value="filenames[icurrent]" @key="icurrent"  />
-                }
-            </MudStack>
-            
+            <MudCard Class="mt-4 pa-3" Elevation="0">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Arquivos selecionados (@files.Count):</MudText>
+                <MudList T="string" Dense="true">
+                    @for (var i = 0; i < files.Count; i++)
+                    {
+                        var currentFileIndex = i; // capture loop variable
+                        <MudListItem>
+                            <MudIcon Icon="@Icons.Material.Filled.InsertDriveFile" Class="mr-2" Color="Color.Info" />
+                            <MudInputString AdornmentText="Nome"
+                                            AdornmentColor="Color.Primary"
+                                            @bind-Value="filenames[currentFileIndex]"
+                                            Label="Nome do Arquivo"
+                                            Variant="Variant.Text"
+                                            FullWidth="true" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="@(() => RemoveFile(currentFileIndex))" />
+
+                            
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudCard>
         }
-        
+        else
+        {
+            <MudPaper Class="mt-4 pa-4 text-center" Elevation="1">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nenhum arquivo selecionado.</MudText>
+            </MudPaper>
+        }
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancelar</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@(!files?.Any() ?? true)">OK</MudButton>
     </DialogActions>
 </MudDialog>
+
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
     [Parameter]
     public Action<string, byte[]> OnFile { get; set; }
 
-    public IReadOnlyList<IBrowserFile> files { get; set; }
-    public string[] filenames { get; set; } = Array.Empty<string>();
-    public async Task OnFileChanged(IReadOnlyList<IBrowserFile> files)
+    public IReadOnlyList<IBrowserFile>? files { get; set; }
+    public List<string> filenames { get; set; } = new List<string>();
+
+    public async Task OnFileChanged(IReadOnlyList<IBrowserFile> newFiles)
     {
-        this.files = files;
-        this.filenames = files.Select((e) => e.Name).ToArray();
+        files = newFiles;
+        filenames = newFiles.Select(e => e.Name).ToList();
+        StateHasChanged(); // Ensure UI reflects changes
     }
 
-    private async Task Submit() {
-        if (files!=null)
+    private void RemoveFile(int index)
+    {
+        if (files != null && index >= 0 && index < files.Count)
         {
-            var len = this.files.Count;
-            for (int i = 0; i < len; i++)
-            {
-                var file = files[i];
-                var namefile = filenames[i];
-                using Stream s = file.OpenReadStream(file.Size + 1);
-                byte[] b = new byte[s.Length];
+            var tempFiles = files.ToList();
+            tempFiles.RemoveAt(index);
+            files = tempFiles;
 
-                await s.ReadAsync(b, 0, (int)s.Length);
-                OnFile?.Invoke(namefile, b);
+            filenames.RemoveAt(index);
+            StateHasChanged();
+        }
+    }
+
+
+    private async Task Submit() {
+        if (files != null && files.Any())
+        {
+            // Iterate over a copy of files and filenames to avoid issues if items are removed during loop
+            var filesToProcess = files.ToList();
+            var filenamesToProcess = filenames.ToList();
+
+            for (int i = 0; i < filesToProcess.Count; i++)
+            {
+                var file = filesToProcess[i];
+                var namefile = filenamesToProcess[i];
+
+                try
+                {
+                    // Consider implementing a max file size check here or on the server
+                    // using Stream s = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024); // Example: 50MB
+                    using Stream s = file.OpenReadStream(file.Size + 1); // Retain original ReadStream size + 1
+                    byte[] b = new byte[s.Length];
+                    await s.ReadAsync(b, 0, (int)s.Length);
+                    OnFile?.Invoke(namefile, b);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error processing file {namefile}: {ex.Message}");
+                    // Optionally, report error to user via MudSnackbar
+                }
             }
             MudDialog.Close(DialogResult.Ok(true));
-
-            
         }
-        
-        
-
     }
 
     private void Cancel() => MudDialog.Cancel();

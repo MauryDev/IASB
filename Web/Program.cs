@@ -10,7 +10,12 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-builder.Services.AddSingleton<FileController>();
+builder.Services.AddSingleton<FileService>();
+builder.Services.AddSingleton<InformativoService>();
+builder.Services.AddSingleton<ProvaiVedeService>();
+builder.Services.AddSingleton<YoutubeService>();
+
+builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 var app = builder.Build();
 
@@ -28,7 +33,7 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-
+app.MapControllers();
 
 
 

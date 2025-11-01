@@ -1,0 +1,144 @@
+﻿@page "/service/provaivede"
+@inject Services.ProvaiVedeService provaiVedeService
+<PageTitle>Provai e Vede</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
+    @if (informativo == null)
+    {
+        <MudPaper Class="pa-6 d-flex flex-column align-center">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.body1" Class="mt-4">Carregando Provai e Vede...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-2">@informativo.Name</MudText>
+
+        <MudCard Elevation="10" Class="mb-6">
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">Opções</MudText>
+            </MudCardHeader>
+
+            <MudCardContent>
+
+
+                <div class="d-flex gap-2 mt-3">
+                    <MudButton Disabled="@isDisable" Variant="Variant.Filled" Color="Color.Primary" OnClick="Play" Target="_blank" StartIcon="@Icons.Material.Filled.PlayArrow">
+                        Play
+                    </MudButton>
+
+
+                    <MudButton Disabled="@isDisable" Variant="Variant.Outlined" Color="Color.Info" OnClick="Download" StartIcon="@Icons.Material.Filled.Download">
+                        Baixar Vídeo
+                    </MudButton>
+                </div>
+            </MudCardContent>
+        </MudCard>
+
+        <MudCard Elevation="1" Class="mb-6">
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Nome do Informativo</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Name</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Publicação</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Date</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Duração</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Duration</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Tamanho</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Size</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-2">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Descrição</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Description</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    }
+    <MudOverlay DarkBackground Visible="@isDisable">
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+        <MudText Typo="Typo.body1" Class="mt-4">@text</MudText>
+    </MudOverlay>
+</MudContainer>
+
+@code {
+    string text { get; set; } = "Carregando...";
+    View.Informativo? informativo { get; set; }
+    bool isDisable { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            informativo = await provaiVedeService.GetInfo();
+        }
+        catch (Exception ex)
+        {
+            // falha ao obter informativo — mantém informativo nulo (UI exibirá mensagem de carregando/erro)
+
+            Console.Error.WriteLine($"Erro ao carregar provai e vede: {ex.Message}");
+        }
+    }
+
+    private async Task Play()
+    {
+
+        try
+        {
+            isDisable = true;
+            text = "Carregando...";
+            await this.InvokeAsync(StateHasChanged);
+            await provaiVedeService.Play(informativo, OnChangedText);
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro no player: {ex.Message}");
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+        }
+    }
+    private async Task Download()
+    {
+        try
+        {
+            isDisable = true;
+            await this.InvokeAsync(StateHasChanged);
+
+            await provaiVedeService.Download(informativo, OnChangedText);
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+
+        }
+        catch (Exception ex)
+        {
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+            Console.Error.WriteLine($"Erro no download: {ex.Message}");
+
+        }
+
+    }
+
+    async Task OnChangedText(string e)
+    {
+        text = e;
+        await this.InvokeAsync(StateHasChanged);
+    }
+}

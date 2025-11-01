@@ -1,0 +1,65 @@
+﻿@page "/service/youtube"
+@inject Services.YoutubeService youtubeService
+<PageTitle>Youtube Player</PageTitle>
+
+<MudPaper Class="pa-6">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+        <MudIcon Icon="@Icons.Custom.Brands.YouTube" Color="Color.Error" Size="Size.Large" />
+        <MudText Typo="Typo.h5">YouTube Video Player</MudText>
+    </MudStack>
+    <MudInputString Placeholder="Digite a url do vídeo" Style="width:100%" Label="YouTube Video URL" @bind-Value="mudInputStringValue" FullWidth Margin="Margin.Dense" />
+    <br />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnSelectVideo" Class="mt-4">
+        Load Video
+    </MudButton>
+</MudPaper>
+ @if (!string.IsNullOrWhiteSpace(_videoUrl))
+{
+    <MudPaper Class="pa-2 mt-4">
+        <div class="youtube-player-wrapper">
+            <iframe src="@fullVideoUrl"
+                    title="YouTube video player"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen>
+            </iframe>
+        </div>
+
+       
+    </MudPaper>
+}
+@code {
+    public string mudInputStringValue { get; set; } = string.Empty;
+    public string? _videoUrl { get; set; } = null;
+    public string fullVideoUrl => $"https://www.youtube.com/embed/{ExtractVideoId(_videoUrl)}";
+    public string? ExtractVideoId(string url)
+    {
+        return youtubeService.ExtractId(url);
+    }
+    public void OnSelectVideo()
+    {
+        _videoUrl = mudInputStringValue;
+    }
+}
+
+<style>
+    .youtube-player-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 aspect ratio */
+        height: 0;
+        overflow: hidden;
+        max-width: 100%;
+        background-color: black;
+    }
+
+    .youtube-player-wrapper iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+    }
+</style>
+

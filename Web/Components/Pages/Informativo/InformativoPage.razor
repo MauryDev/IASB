@@ -1,92 +1,143 @@
 ﻿@page "/service/informativo"
-
+@inject Services.InformativoService InformativoService
+<PageTitle>Informativo</PageTitle>
 <MudContainer MaxWidth="MaxWidth.Medium" Class="my-8">
-    
-    <MudText Typo="Typo.h3" Color="Color.Primary" Class="mb-4"></MudText>
-    <MudText Typo="Typo.subtitle1" Class="mb-6">O seu guia semanal de notícias e eventos da igreja.</MudText>
-    
-    <MudDivider Class="my-6" />
+    @if (informativo == null)
+    {
+        <MudPaper Class="pa-6 d-flex flex-column align-center">
+            <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.body1" Class="mt-4">Carregando informativo...</MudText>
+        </MudPaper>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" Color="Color.Primary" Class="mb-2">@informativo.Name</MudText>
 
-    <MudCard Elevation="25" Class="mb-8">
-        <MudCardHeader>
-            <MudText Typo="Typo.h5">Assista Agora</MudText>
-        </MudCardHeader>
-        <MudCardContent>
-            
-            <div style="position: relative; width: 100%; height: 0; padding-bottom: 56.25%;">
-                <iframe 
-                    style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"
-                    src="" 
-                    frameborder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
-                </iframe>
-            </div>
+        <MudCard Elevation="10" Class="mb-6">
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">Opções</MudText>
+            </MudCardHeader>
 
-            <MudText Typo="Typo.caption" Class="mt-2">Se a reprodução não iniciar, clique na janela do vídeo.</MudText>
-        </MudCardContent>
-    </MudCard>
+            <MudCardContent>
 
-    <MudCard Elevation="5" Class="mb-8 mud-border-primary">
-        <MudCardContent Class="d-flex align-center justify-space-between">
-            <div class="d-flex flex-column">
-                <MudText Typo="Typo.h6">Baixe o Informativo (PDF)</MudText>
-                <MudText Typo="Typo.body2">Versão completa para leitura offline e compartilhamento.</MudText>
-            </div>
-            
-            <MudButton 
-                Variant="Variant.Filled" 
-                Color="Color.Info" 
-                StartIcon="@Icons.Material.Filled.Download" 
-                Href="@DownloadLink" 
-                Target="_blank"
-                >
-                Baixar (@DownloadFileSize)
-            </MudButton>
 
-        </MudCardContent>
-    </MudCard>
+                <div class="d-flex gap-2 mt-3">
+                    <MudButton Disabled="@isDisable" Variant="Variant.Filled" Color="Color.Primary" OnClick="Play" Target="_blank" StartIcon="@Icons.Material.Filled.PlayArrow">
+                        Play
+                    </MudButton>
 
-    <div class="informacoes">
-        <MudText Typo="Typo.h4" Class="mb-3">Detalhes do Conteúdo</MudText>
 
-        <MudGrid>
-            <MudItem xs="12" sm="6">
-                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Nome do Informativo:</MudText>
-                <MudText Typo="Typo.body1">@NomeDetalhado</MudText>
-            </MudItem>
+                    <MudButton Disabled="@isDisable" Variant="Variant.Outlined" Color="Color.Info" OnClick="Download" StartIcon="@Icons.Material.Filled.Download">
+                        Baixar Vídeo
+                    </MudButton>
+                </div>
+            </MudCardContent>
+        </MudCard>
 
-            <MudItem xs="12" sm="6">
-                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Publicação:</MudText>
-                <MudText Typo="Typo.body1">@DataPublicacao.ToShortDateString() | Duração: @Duracao</MudText>
-            </MudItem>
-            
-            <MudItem xs="12">
-                <MudText Typo="Typo.subtitle1" Class="font-weight-bold">Descrição:</MudText>
-                <MudText Typo="Typo.body1">@Descricao</MudText>
-            </MudItem>
+        <MudCard Elevation="1" Class="mb-6">
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Nome do Informativo</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Name</MudText>
+                    </MudItem>
 
-        </MudGrid>
-    </div>
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Publicação</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Date</MudText>
+                    </MudItem>
 
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Duração</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Duration</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Tamanho</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Size</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12" Class="mt-2">
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">Descrição</MudText>
+                        <MudText Typo="Typo.body1">@informativo.Description</MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    }
+    <MudOverlay DarkBackground Visible="@isDisable">
+        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+        <MudText Typo="Typo.body1" Class="mt-4">@text</MudText>
+    </MudOverlay>
 </MudContainer>
 
 @code {
+    View.Informativo? informativo { get; set; }
+    string text { get; set; } = "Carregando...";
 
-    // ----------------------------------------------------------------------
-    // PROPRIEDADES (Dados que você deve preencher/atualizar)
-    // ----------------------------------------------------------------------
-    
-    // 1. Dados do Vídeo
-    public string Duracao { get; set; } = "5 minutos e 12 segundos";
+    bool isDisable { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            informativo = await InformativoService.GetInfo();
+        }
+        catch (Exception ex)
+        {
+            // falha ao obter informativo — mantém informativo nulo (UI exibirá mensagem de carregando/erro)
+            Console.Error.WriteLine($"Erro ao carregar informativo: {ex.Message}");
+        }
+    }
 
-    // 2. Dados do Download
-    public string DownloadLink { get; set; } = "/arquivos/informativo-semanal.pdf"; // MUDAR!
-    public string DownloadFileSize { get; set; } = "2.5 MB";
+    private async Task Play()
+    {
 
-    // 3. Dados Informativos
-    public string NomeDetalhado { get; set; } = "Visão da Semana - Edição Especial de Missões."; // MUDAR!
-    public DateTime DataPublicacao { get; set; } = DateTime.Today;
-    public string Descricao { get; set; }
+        try
+        {
+            isDisable = true;
+            text = "Carregando...";
+            await this.InvokeAsync(StateHasChanged);
+            await InformativoService.Play(informativo, OnChangedText);
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
 
+
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Erro no player: {ex.Message}");
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+        }
+    }
+    private async Task Download()
+    {
+        try
+        {
+            isDisable = true;
+            await this.InvokeAsync(StateHasChanged);
+
+            await InformativoService.Download(informativo, OnChangedText);
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+
+        }
+        catch (Exception ex)
+        {
+            isDisable = false;
+            await this.InvokeAsync(StateHasChanged);
+
+            Console.Error.WriteLine($"Erro no download: {ex.Message}");
+
+        }
+
+    }
+
+    async Task OnChangedText(string e)
+    {
+        text = e;
+        await this.InvokeAsync(StateHasChanged);
+    }
 }

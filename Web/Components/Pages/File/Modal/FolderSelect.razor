@@ -1,0 +1,210 @@
+﻿@inject Services.FileService FileService
+@using Web.Utils
+<MudDialog>
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.FolderOpen" Class="mr-2" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Seleciona Pasta</MudText>
+            <MudSpacer />
+            <MudText Typo="Typo.caption" Class="ml-2">@PathCurrentNoNull</MudText>
+        </MudStack>
+    </TitleContent>
+
+    <DialogContent>
+        <MudPaper Class="pa-4">
+            <MudStack Spacing="2">
+                <MudTextField @bind-Value="searchText" Placeholder="Pesquisar pastas..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                <MudStack Row="true" AlignItems="AlignItems.Center">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                        <MudButton Variant="Variant.Text" OnClick="GoUp" StartIcon="@Icons.Material.Filled.ArrowUpward" Disabled="@IsAtRoot">Subir</MudButton>
+                        <MudButton Variant="Variant.Text" OnClick="Reload" StartIcon="@Icons.Material.Filled.Refresh">Atualizar</MudButton>
+                    </MudStack>
+                    <MudText Typo="Typo.caption">@($"{Directories.Count()} pastas")</MudText>
+                </MudStack>
+                <MudDivider />
+                <div class="folder-list">
+                    @if (Loading)
+                    {
+                        <div class="loader">Carregando...</div>
+                    }
+                    else if (!Directories.Any())
+                    {
+                        <MudText Typo="Typo.body2" Class="pa-2">Nenhuma pasta encontrada.</MudText>
+                    }
+                    else
+                    {
+                        @foreach (var dir in FilteredDirectories)
+                        {
+                            var name = Path.GetFileName(dir);
+                            var isSelected = PathSelected == CombineRelative(PathCurrent, name);
+                            var classStr = "folder-item " + (isSelected ? "selected" : "");
+                            <MudPaper Class="@classStr" Elevation="0"
+                                      @onclick="DelegateHelper.Wrap(SelectOnly,name)"
+                                      @ondblclick="DelegateHelper.Wrap(EnterFolder,name)">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Folder" Color="Color.Info" />
+                                    <div class="folder-meta">
+                                        <div class="folder-name">@name</div>
+                                        <div class="folder-sub">@GetSubCountDisplay(dir)</div>
+                                    </div>
+                                    <MudSpacer />
+                                    <MudText Typo="Typo.caption" Class="muted">Double-click to open</MudText>
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    }
+                </div>
+            </MudStack>
+        </MudPaper>
+
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string PathCurrent { get; set; } = string.Empty;
+    public string PathCurrentNoNull => PathCurrent ?? string.Empty;
+    public string PathSelected { get; set; } = string.Empty;
+
+    private IEnumerable<string> Directories { get; set; } = Enumerable.Empty<string>();
+    private IEnumerable<string> FilteredDirectories => string.IsNullOrWhiteSpace(searchText)
+        ? Directories
+        : Directories.Where(d => Path.GetFileName(d).Contains(searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private string searchText = string.Empty;
+    private bool Loading { get; set; } = false;
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await Reload();
+    }
+
+    private async Task Reload()
+    {
+        Loading = true;
+        PathSelected = string.Empty;
+        StateHasChanged();
+
+        var result = FileService.GetDirectories(PathCurrentNoNull);
+        if (result is not null)
+        {
+            var dirs = result;
+            Directories = dirs;
+        }
+        else
+        {
+            Directories = Enumerable.Empty<string>();
+        }
+
+        Loading = false;
+        StateHasChanged();
+    }
+
+    private void SelectOnly(string folderName)
+    {
+        PathSelected = CombineRelative(PathCurrentNoNull, folderName);
+        
+    }
+
+    private async Task EnterFolder(string folderName)
+    {
+        PathCurrent = CombineRelative(PathCurrentNoNull, folderName);
+        await Reload();
+    }
+
+    private string CombineRelative(string basePath, string name)
+    {
+
+        return Path.Combine(basePath, name);
+    }
+
+    private bool IsAtRoot
+    {
+        get
+        {
+
+            return string.IsNullOrEmpty(PathCurrentNoNull) || PathCurrentNoNull == "/";
+        }
+    }
+
+    private async Task GoUp()
+    {
+        var parent = Path.GetDirectoryName(PathCurrentNoNull);
+        if (parent is null)
+        {
+            PathCurrent = string.Empty;
+        }
+        else
+        {
+            PathCurrent = parent;
+        }
+        await Reload();
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        // If nothing selected, return current path as selection
+        var result = string.IsNullOrWhiteSpace(PathSelected) ? PathCurrentNoNull : PathSelected;
+        MudDialog.Close(DialogResult.Ok(result));
+    }
+
+    private string GetSubCountDisplay(string fullDir)
+    {
+        try
+        {
+            var countDirs = Directory.GetDirectories(fullDir).Length;
+            var countFiles = Directory.GetFiles(fullDir).Length;
+            return $"{countDirs} folders • {countFiles} files";
+        }
+        catch
+        {
+            return "unavailable";
+        }
+    }
+}
+
+<style>
+    .folder-select-grid { min-height: 380px; }
+
+    .folder-list {
+        max-height: calc(70vh - 200px);
+        overflow: auto;
+    }
+
+    .folder-item {
+        padding: 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: box-shadow .12s ease, transform .08s ease;
+        border-radius: 6px;
+    }
+
+    .folder-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    .folder-item.selected {
+        background: linear-gradient(90deg, rgba(33,150,243,0.06), rgba(33,150,243,0.03));
+        border-left: 4px solid rgba(33,150,243,0.9);
+    }
+
+    .folder-meta { min-width: 0; overflow: hidden; }
+    .folder-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .folder-sub { font-size: 0.8rem; color: rgba(0,0,0,0.6); }
+
+    .preview-panel { min-height: 300px; }
+
+    .muted { color: rgba(0,0,0,0.45); }
+
+    .loader { padding: 24px; text-align: center; color: rgba(0,0,0,0.6); }
+</style>

@@ -1,0 +1,36 @@
+﻿@inject NavigationManager Navigation
+
+<MudGrid Spacing="4" Justify="Justify.Center">
+    @foreach (var service in Services)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="10" Class="pa-4 text-center d-flex flex-column align-center justify-space-between" Style="height: 100%;">
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">@service.Name</MudText>
+                </MudCardHeader>
+                <MudCardMedia Height="200" Class="d-flex justify-center my-4" Style="width:200px" Image="@service.Image">
+                </MudCardMedia>
+                <MudCardContent Class="flex-grow-1">
+                    <MudText Typo="Typo.body1">@service.Description</MudText>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@NavigateTo(service.Url)" EndIcon="@Icons.Material.Filled.ArrowForward">
+                        @service.ButtonText
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+
+    }
+
+</MudGrid>
+
+@code {
+    [Parameter]
+    public View.ServiceInfo[] Services { get; set; }
+    private Action NavigateTo(string path)
+    {
+        return () => Navigation.NavigateTo(path);
+    }
+   
+}
