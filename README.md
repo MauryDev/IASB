@@ -1,54 +1,59 @@
 # IASB
 
 ## About the Project
-`IASB` is a versatile project designed to streamline data processing, API integration, and business logic management. It aims to provide a robust and efficient solution for various application needs, enabling users to automate workflows, integrate systems, and manage data effectively.
+`IASB` é um projeto versátil e focado em auxiliar as operações de sonoplastia em igrejas. Ele foi desenvolvido para simplificar o gerenciamento e a reprodução de conteúdos multimídia essenciais para os cultos e atividades congregacionais. As principais funcionalidades do sistema incluem:
 
-This project is developed with a focus on modularity, scalability, and ease of maintenance, making it suitable for various applications and potential extensions.
+*   **Gerenciamento de Arquivos**: Uma ferramenta eficiente para organizar, armazenar e acessar arquivos e documentos relacionados às atividades da igreja.
+*   **Apresentação de Vídeos Semanais**: Suporte dedicado para os vídeos "Provai e Vede" e "Informativo", permitindo que sejam facilmente acessados, baixados e reproduzidos.
+*   **Reprodutor de YouTube sem Anúncios**: Um player integrado de YouTube que proporciona a reprodução de vídeos sem interrupções comerciais, ideal para uso durante os serviços.
+
+O projeto busca oferecer uma solução robusta e intuitiva para automatizar fluxos de trabalho, integrar sistemas e gerenciar recursos digitais de forma eficaz, com foco em modularidade, escalabilidade e facilidade de manutenção.
 
 ## Technologies Used
-*   **C#**: The primary programming language for development.
-*   **.NET**: The framework providing libraries and runtime environment.
-*   **Visual Studio 2026**: The integrated development environment used for building and debugging.
-*   **ASP.NET Core**: For building web applications and APIs.
+*   **C#**: Principal linguagem de programação utilizada no desenvolvimento.
+*   **.NET**: Framework que oferece as bibliotecas e o ambiente de execução.
+*   **Visual Studio 2026**: Ambiente de desenvolvimento integrado (IDE) utilizado para construção e depuração.
+*   **ASP.NET Core**: Para a construção de aplicações web e APIs.
+*   **MudBlazor**: Componentes UI para construir a interface de usuário.
 
 ## Use Cases
-`IASB` can be effectively applied in several scenarios, including but not limited to:
-*   **Data Transformation**: Processing and converting raw data into a more usable format.
-*   **API Development**: Serving as a backend for web or mobile applications.
-*   **Business Logic Layer**: Implementing complex business rules and workflows.
-*   **Integration Services**: Connecting different systems and services.
-*   **ETL Processes**: Extracting, Transforming, and Loading data between systems.
+`IASB` pode ser efetivamente aplicado em vários cenários, incluindo, mas não se limitando a:
+*   **Suporte à Sonoplastia**: Ferramentas dedicadas para sonoplastas gerenciarem e apresentarem conteúdo multimídia durante os serviços.
+*   **Reprodução de Conteúdo Educacional/Inspiracional**: Facilita a exibição de vídeos "Provai e Vede" e "Informativo" para a congregação.
+*   **Gerenciamento de Mídia da Igreja**: Organização centralizada de arquivos de áudio, vídeo e documentos.
+*   **Streaming e Apresentações**: Utilização do player de YouTube integrado para exibir conteúdo relevante sem distrações de anúncios.
+*   **Automação de Tarefas**: Otimização do processo de obtenção e disponibilização de conteúdos semanais.
 
 ## Getting Started
 
-To get a local copy up and running, follow these simple steps.
+Para ter uma cópia local do projeto em execução, siga estas etapas simples.
 
 ### Prerequisites
 
-Ensure you have the following installed on your development machine:
-*   **.NET SDK**: Version 8.0 or later.
-*   **Visual Studio 2026**: With the necessary workloads (e.g., __.NET desktop development__, __ASP.NET and web development__, etc.).
-*   [**Docker**](https://www.docker.com/get-started): For containerization (optional, if using Docker).
+Certifique-se de ter o seguinte instalado em sua máquina de desenvolvimento:
+*   **.NET SDK**: Versão 8.0 ou posterior.
+*   **Visual Studio 2026**: Com as cargas de trabalho necessárias (por exemplo, __desenvolvimento para desktop com .NET__, __desenvolvimento ASP.NET e web__, etc.).
+*   [**Docker**](https://www.docker.com/get-started): Para conteinerização (opcional, se estiver usando Docker).
 
 ### Installation and Running
 
-1.  **Clone the repository:**
+1.  **Clone o repositório:**
     ```bash
     git clone https://github.com/MauryDev/IASB.git
     ```
-2.  **Navigate to the project directory:**
+2.  **Navegue até o diretório do projeto:**
     ```bash
     cd IASB
     ```
-3.  **Open the solution in Visual Studio 2026:**
-    Locate and open the `.sln` file (e.g., `IASB.sln`) in Visual Studio.
-4.  **Restore NuGet packages:**
-    Visual Studio should automatically restore the necessary NuGet packages. If not, right-click on the solution in __Solution Explorer__ and select __Restore NuGet Packages__.
-5.  **Build the project:**
-    Go to __Build > Build Solution__ or press __Ctrl+Shift+B__.
-6.  **Run the application:**
-    Set the desired project as the startup project (if applicable) and press __F5__ or click the __Start__ button in Visual Studio to run the application.
-    Access the application using the URL provided in the output window (e.g., `http://localhost:5000`).
+3.  **Abra a solução no Visual Studio 2026:**
+    Localize e abra o arquivo `.sln` (por exemplo, `IASB.sln`) no Visual Studio.
+4.  **Restaure os pacotes NuGet:**
+    O Visual Studio deve restaurar automaticamente os pacotes NuGet necessários. Caso contrário, clique com o botão direito na solução no __Gerenciador de Soluções__ e selecione __Restaurar Pacotes NuGet__.
+5.  **Compile o projeto:**
+    Vá para __Compilar > Compilar Solução__ ou pressione __Ctrl+Shift+B__.
+6.  **Execute a aplicação:**
+    Defina o projeto desejado como projeto de inicialização (se aplicável) e pressione __F5__ ou clique no botão __Iniciar__ no Visual Studio para executar a aplicação.
+    Acesse a aplicação usando a URL fornecida na janela de saída (por exemplo, `http://localhost:5000`).
 
 ## Creator
-This project was created by [MauryDev](https://github.com/MauryDev).
+Este projeto foi criado por [MauryDev](https://github.com/MauryDev).
