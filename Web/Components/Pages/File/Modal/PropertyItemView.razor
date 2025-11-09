@@ -1,0 +1,60 @@
+﻿@typeparam T where T : View.IItemProperty
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-3 mb-n1" />
+            Propriedades
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4">Propriedades do item selecionado:</MudText>
+        <MudPaper Class="pa-4" Elevation="2">
+            <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Nome: </MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">@ItemProperty.Name</MudText>
+            <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Criado: </MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">@ItemProperty.CreationTime</MudText>
+            <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Localização: </MudText>
+            <MudText Typo="Typo.body2" Class="mb-4">@ItemProperty.DirectoryName</MudText>
+            @if (ItemProperty is View.FileProperty fileProperty)
+            {
+                <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Tamanho: </MudText>
+                <MudText Typo="Typo.body2" Class="mb-4">@fileProperty.Length bytes</MudText>
+            } else if (ItemProperty is View.DirectoryProperty directoryProperty)
+            {
+                <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Número de arquivos: </MudText>
+                <MudText Typo="Typo.body2" Class="mb-4">@directoryProperty.FileCount</MudText>
+                <MudText Typo="Typo.subtitle1" Inline Class="mb-2">Número de pastas: </MudText>
+                <MudText Typo="Typo.body2" Class="mb-4">@directoryProperty.SubDirectoryCount</MudText>
+            }
+
+        </MudPaper>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public string NameFile { get; set; } = string.Empty;
+    [Parameter]
+    public T ItemProperty { get; set; }
+
+
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+    }
+
+   
+
+    private void Submit()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+
+    }
+
+}

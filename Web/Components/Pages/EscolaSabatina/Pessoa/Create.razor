@@ -1,0 +1,124 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using Microsoft.Extensions.DependencyInjection
+@using Web.Database
+@using Web.Database.Model
+@using Web.View.EscolaSabatina
+@inject MudBlazor.ISnackbar Snackbar
+@inject ILogger<Create> Logger
+
+<MudDialog >
+    <TitleContent>
+        <div class="d-flex align-center">
+            <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="mr-3">
+                <MudIcon Color="Color.Dark" Icon="@Icons.Material.Filled.Person" Size="Size.Large" />
+
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.h6">Criar pessoa</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Adicione uma nova pessoa ao cadastro da Escola Sabatina</MudText>
+            </div>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <EditForm Model="@model" OnValidSubmit="SubmitValid" OnInvalidSubmit="OnInvalid">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <MudPaper Class="pa-4" Elevation="0">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="model.Nome"
+                                      Label="Nome"
+                                      For="@(() => model.Nome)"
+                                      Immediate="true"
+                                      Required="true"
+                                      RequiredError="O nome é obrigatório."
+                                      Variant="Variant.Outlined"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Edit"
+                                      Class="w-100" />
+                    </MudItem>
+
+                    <MudItem xs="12" Class="d-flex align-center">
+                        <MudSwitch T="bool" @bind-Value="model.Ativo" ThumbIcon="@(model.Ativo == true ? Icons.Material.Filled.Done : Icons.Material.Filled.Close)" Color="Color.Primary" />
+
+                        <MudText Typo="Typo.body2" Class="ml-2">Ativo</MudText>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            O cadastro será salvo no banco de dados. Campos obrigatórios precisam ser preenchidos.
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </EditForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="TriggerSubmit">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private PessoaCreate model = new() { Ativo = true };
+
+    [CascadingParameter] 
+    private IMudDialogInstance MudDialog { get; set; }
+
+    // Referência ao EditContext para disparar validação manualmente
+    private EditContext? _editContext;
+
+    protected override void OnInitialized()
+    {
+        _editContext = new EditContext(model);
+    }
+
+    private void TriggerSubmit()
+    {
+        if (_editContext == null)
+            return;
+
+        // Força validação; se válido, chama SubmitValid
+        if (_editContext.Validate())
+        {
+            _ = SubmitValid();
+        }
+        else
+        {
+            OnInvalid();
+        }
+    }
+
+    private async Task SubmitValid()
+    {
+        try
+        {
+            
+            var pessoa = new Pessoa
+            {
+                Nome = model.Nome?.Trim() ?? string.Empty,
+                Ativo = model.Ativo
+            };
+
+          
+            MudDialog.Close(MudBlazor.DialogResult.Ok(pessoa));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Erro ao salvar pessoa");
+            Snackbar.Add("Falha ao salvar pessoa. Veja logs para mais detalhes.", MudBlazor.Severity.Error);
+        }
+    }
+
+    private void OnInvalid()
+    {
+        Snackbar.Add("Corrija os erros do formulário antes de salvar.", MudBlazor.Severity.Warning);
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+ 
+}

@@ -45,11 +45,18 @@ public class ProvaiVedeService
             return null;
         }
 
-        var localContent = await File.ReadAllTextAsync(localPath);
-        var serializer = new Serializer();
-        var provaiVede = serializer.Deserialize<View.ProvaiVede>(localContent);
-
-        return provaiVede;
+        
+        try
+        {
+            var localContent = await File.ReadAllTextAsync(localPath);
+            var serializer = new Serializer();
+            var provaiVede = serializer.Deserialize<View.ProvaiVede>(localContent);
+            return provaiVede;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
     }
     public async Task SetInfoLocal(View.ProvaiVede provaiVede)
     {

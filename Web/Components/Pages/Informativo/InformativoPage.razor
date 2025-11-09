@@ -65,11 +65,12 @@
             </MudCardContent>
         </MudCard>
     }
-    <MudOverlay DarkBackground Visible="@isDisable">
-        <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-        <MudText Typo="Typo.body1" Class="mt-4">@text</MudText>
-    </MudOverlay>
+    
 </MudContainer>
+<Web.Components.General.Loading IsLoading="@isDisable">
+    <MudText Typo="Typo.body1" Class="mt-4">@text</MudText>
+</Web.Components.General.Loading>
+
 
 @code {
     View.Informativo? informativo { get; set; }

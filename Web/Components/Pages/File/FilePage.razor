@@ -73,7 +73,7 @@ else if (!_isLoading)
             @foreach (var folder in _filesAndFolders.Item1)
             {
                 var foldername = Path.GetFileName(folder);
-                <MudListItem OnClick="DelegateHelper.Wrap(OnOpenFolder,foldername)" Class="hover-highlight">
+                <MudListItem @ondblclick="DelegateHelper.Wrap(OnOpenFolder, foldername)" Class="hover-highlight">
                     
                     <MudIcon Style="vertical-align: middle;" Icon="@Icons.Material.Filled.Folder" Color="Color.Warning" Class="mr-2" />
                     <MudText Inline="true" Typo="Typo.body1">@foldername</MudText>
@@ -83,6 +83,7 @@ else if (!_isLoading)
                         <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnDelete, foldername)">Excluir</MudMenuItem>
 
                         <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnMoveItem,foldername)">Mover</MudMenuItem>
+                        <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnPropertyDirectory, foldername)">Propriedades</MudMenuItem>
 
                     </MudMenu>
                    
@@ -96,9 +97,9 @@ else if (!_isLoading)
             @foreach (var file in _filesAndFolders.Item2)
             {
                 var filename = Path.GetFileName(file);
-                <MudListItem OnClick="DelegateHelper.Wrap(OnOpenFile, filename)" Class="hover-highlight">
+                <MudListItem @ondblclick="DelegateHelper.Wrap(OnOpenFile, filename)" Class="hover-highlight">
                     <ChildContent>
-                        <MudIcon Style="vertical-align: middle" Icon="@Icons.Material.Filled.InsertDriveFile" Color="Color.Info" Class="mr-2" />
+                        <MudIcon Style="vertical-align: middle" Icon="@fileService.GetIconFile(filename)" Color="Color.Info" Class="mr-2" />
                         <MudText Inline Typo="Typo.body1">@filename</MudText>
                         <MudMenu Style="vertical-align: middle" AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true" Icon="@Icons.Material.Filled.MoreVert">
                             <MudMenuItem OnClick="DelegateHelper.Wrap(OnOpenFile,filename)">Abrir</MudMenuItem>
@@ -107,6 +108,7 @@ else if (!_isLoading)
                             <MudMenuItem Target="_blank" Href="@GetDownloadUrl(filename)">Download</MudMenuItem>
                             <MudMenuItem OnClick="DelegateHelper.WrapAsync(CopyFile, filename)">Copiar</MudMenuItem>
                             <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnMoveItem, filename)">Mover</MudMenuItem>
+                            <MudMenuItem OnClick="DelegateHelper.WrapAsync(OnPropertyFile, filename)">Propriedades</MudMenuItem>
 
                         </MudMenu>
                     </ChildContent>
@@ -203,7 +205,7 @@ else if (!_isLoading)
         }
     }
 
-    
+
     private async Task ExecuteFileOperation(Func<Task> operation)
     {
         _isLoading = true;
@@ -239,7 +241,7 @@ else if (!_isLoading)
         }
     }
 
-    public void UploadFile(string filename, byte[] bytes)
+    public void UploadFile(string filename, MemoryStream bytes)
     {
         fileService.Upload(PathCurrent, filename, bytes);
     }
@@ -298,7 +300,7 @@ else if (!_isLoading)
                 return Task.CompletedTask;
             });
         }
-        
+
     }
 
     public void OnOpenFolder(string foldername)
@@ -397,20 +399,62 @@ else if (!_isLoading)
     {
         await OpenFolderDialog(async (destinationPath) =>
         {
-            fileService.Copy(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
-            await this.InvokeAsync(this.StateHasChanged);
+            await ExecuteFileOperation(() =>
+            {
+                fileService.Copy(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
+                return Task.CompletedTask;
+            });
         });
         
+
+
     }
 
     public async Task OnMoveItem(string filename)
     {
         await OpenFolderDialog(async (destinationPath) =>
         {
-            fileService.Move(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
-            await this.InvokeAsync(this.StateHasChanged);
+            await ExecuteFileOperation(() =>
+            {
+                fileService.Move(Path.Combine(PathCurrent, filename), Path.Combine(destinationPath, filename));
+                return Task.CompletedTask;
+            });
         });
+        
+        
+
 
     }
-
+    public async Task OnPropertyFile(string filename)
+    {
+        var fullpath = Path.Combine(PathCurrent, filename);
+        var itemProperty = fileService.GetFileProperty(fullpath);
+        if (itemProperty != null)
+        {
+            var parameters = new DialogParameters<Modal.PropertyItemView<View.FileProperty>>
+            {
+                { x => x.ItemProperty, itemProperty },
+                { x => x.NameFile, filename },
+            };
+            var options = new DialogOptions { CloseOnEscapeKey = true };
+            var dialog = await DialogService.ShowAsync<Modal.PropertyItemView<View.IItemProperty>>($"Propriedades - {filename}", parameters, options);
+            var result = await dialog.Result;
+        }
+    }
+    public async Task OnPropertyDirectory(string fodlername)
+    {
+        var fullpath = Path.Combine(PathCurrent, fodlername);
+        var itemProperty = fileService.GetDirectoryProperty(fullpath);
+        if (itemProperty != null)
+        {
+            var parameters = new DialogParameters<Modal.PropertyItemView<View.DirectoryProperty>>
+            {
+                { x => x.ItemProperty, itemProperty },
+                { x => x.NameFile, fodlername },
+            };
+            var options = new DialogOptions { CloseOnEscapeKey = true };
+            var dialog = await DialogService.ShowAsync<Modal.PropertyItemView<View.IItemProperty>>($"Propriedades - {fodlername}", parameters, options);
+            var result = await dialog.Result;
+        }
+    }
 }

@@ -1,5 +1,7 @@
+﻿using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using Web.Components;
+using Web.Database;
 using Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +16,14 @@ builder.Services.AddSingleton<FileService>();
 builder.Services.AddSingleton<InformativoService>();
 builder.Services.AddSingleton<ProvaiVedeService>();
 builder.Services.AddSingleton<YoutubeService>();
+builder.Services.AddSingleton<WindowMessageService>();
+var connectionString = builder.Configuration.GetConnectionString("IASB_DB");
+builder.Services.AddDbContextFactory<IASBContext>(options => options.UseSqlite(connectionString));
+
+builder.Services.AddQuickGridEntityFrameworkAdapter();
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
 
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
@@ -23,8 +33,8 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseMigrationsEndPoint();
 }
 
 app.UseHttpsRedirection();

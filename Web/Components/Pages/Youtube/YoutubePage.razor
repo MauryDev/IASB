@@ -1,4 +1,5 @@
 ﻿@page "/service/youtube"
+@inject IJSRuntime JS
 @inject Services.YoutubeService youtubeService
 <PageTitle>Youtube Player</PageTitle>
 
@@ -12,54 +13,90 @@
     <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="OnSelectVideo" Class="mt-4">
         Load Video
     </MudButton>
-</MudPaper>
- @if (!string.IsNullOrWhiteSpace(_videoUrl))
-{
-    <MudPaper Class="pa-2 mt-4">
-        <div class="youtube-player-wrapper">
-            <iframe src="@fullVideoUrl"
-                    title="YouTube video player"
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="toFullscreen" Class="mt-4">
+        Fullscreen
+    </MudButton>
+    <MudButton @ondblclick="toPlayFullscreen" Variant="Variant.Filled" Color="Color.Primary" OnClick="ToPlay" Class="mt-4">
+        Play
+    </MudButton>
+
+    <script>
+        var YoutubePage = {
+            "toFullscreen": (element) => {
+                if (element.requestFullscreen) {
+                    element.requestFullscreen();
+                } else if (element.mozRequestFullScreen) { // Firefox
+                    element.mozRequestFullScreen();
+                } else if (element.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                    element.webkitRequestFullscreen();
+                } else if (element.msRequestFullscreen) { // IE/Edge
+                    element.msRequestFullscreen();
+                }
+            },
+            "toPlay": (iframe) => {
+                var command = JSON.stringify({
+                    'event': 'command',
+                    'func': 'playVideo'
+                });
+                iframe.contentWindow.postMessage(command, '*');
+            }
+
+        }
+        
+    </script>
+    <div>
+        @if (_videoUrl != null)
+        {
+            <iframe @ref="objRef" src="@fullVideoUrl" title="YouTube video player" width="400" height="400"
                     frameborder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     referrerpolicy="strict-origin-when-cross-origin"
                     allowfullscreen>
+                Your browser does not support iframes.
             </iframe>
-        </div>
+        }
+    </div>
+</MudPaper>
 
-       
-    </MudPaper>
-}
 @code {
     public string mudInputStringValue { get; set; } = string.Empty;
     public string? _videoUrl { get; set; } = null;
-    public string fullVideoUrl => $"https://www.youtube.com/embed/{ExtractVideoId(_videoUrl)}";
+    public string fullVideoUrl => $"https://www.youtube.com/embed/{ExtractVideoId(_videoUrl)}?enablejsapi=1";
+    ElementReference? objRef;
     public string? ExtractVideoId(string url)
     {
         return youtubeService.ExtractId(url);
     }
-    public void OnSelectVideo()
+    public async Task OnSelectVideo()
     {
         _videoUrl = mudInputStringValue;
+
+
+    }
+    public async Task toFullscreen()
+    {
+        if (objRef.HasValue && _videoUrl != null)
+        {
+            await JS.InvokeVoidAsync("YoutubePage.toFullscreen", objRef.Value);
+        }
+    }
+    public async Task ToPlay()
+    {
+        if (objRef.HasValue && _videoUrl != null)
+        {
+            await JS.InvokeVoidAsync("YoutubePage.toPlay", objRef.Value);
+        }
+    }
+    public async Task toPlayFullscreen()
+    {
+        if (objRef.HasValue && _videoUrl != null)
+        {
+            await JS.InvokeVoidAsync("YoutubePage.toFullscreen", objRef.Value);
+
+            await JS.InvokeVoidAsync("YoutubePage.toPlay", objRef.Value);
+        }
     }
 }
 
-<style>
-    .youtube-player-wrapper {
-        position: relative;
-        padding-bottom: 56.25%; /* 16:9 aspect ratio */
-        height: 0;
-        overflow: hidden;
-        max-width: 100%;
-        background-color: black;
-    }
 
-    .youtube-player-wrapper iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        border: 0;
-    }
-</style>
 

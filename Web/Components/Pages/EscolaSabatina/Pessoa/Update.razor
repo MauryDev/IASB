@@ -1,0 +1,45 @@
+﻿@using Web.Database.Model
+
+<MudDialog >
+    <TitleContent>
+        <MudText Typo="Typo.h6">Editar Aluno: @Pessoa.Nome</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraSmall">
+            <MudGrid Justify="Justify.Center" Class="mb-4">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Pessoa.Nome"
+                                  Label="Nome do Aluno"
+                                  Variant="Variant.Outlined"
+                                  FullWidth="true" />
+                </MudItem>
+                <MudItem xs="12" Class="d-flex justify-center mt-4">
+                    <MudSwitch T="bool" @bind-Value="Pessoa.Ativo" ThumbIcon="@(Pessoa.Ativo == true ? Icons.Material.Filled.Done : Icons.Material.Filled.Close)" Color="Color.Primary" Label="@(Pessoa.Ativo ? "Ativo" : "Inativo")" />
+                </MudItem>
+            </MudGrid>
+        </MudContainer>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Salvar</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+   
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public Pessoa Pessoa { get; set; } = new();
+
+    private async Task Submit()
+    {
+        MudDialog.Close(DialogResult.Ok(Pessoa));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+}

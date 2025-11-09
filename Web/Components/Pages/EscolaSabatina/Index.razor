@@ -1,0 +1,55 @@
+﻿@page "/service/escolasabatina"
+@inject NavigationManager UriHelper
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h4" GutterBottom="true" Align="Align.Center">Bem-vindo à Escola Sabatina</MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-8">
+        Escolha uma ação para começar.
+    </MudText>
+
+    <MudGrid Spacing="4" Justify="Justify.Center">
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="25" Class="d-flex flex-column align-center justify-center py-8 px-4"
+                     Style="height:100%;">
+                <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Large" Color="Color.Primary" Class="mb-4" />
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">Gerenciar Alunos</MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-4">
+                    Adicione, visualize, edite ou remova alunos da escola sabatina.
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" EndIcon="@Icons.Material.Filled.ArrowForward"
+                           OnClick="NavigateToPessoaList">
+                    Acessar
+                </MudButton>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="25" Class="d-flex flex-column align-center justify-center py-8 px-4"
+                     Style="height:100%;">
+                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Large" Color="Color.Secondary"
+                         Class="mb-4" />
+                <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-2">Fazer Chamada</MudText>
+                <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-4">
+                    Selecione um sábado para registrar a presença e responder às perguntas.
+                </MudText>
+                <MudButton Variant="Variant.Filled" Color="Color.Secondary" EndIcon="@Icons.Material.Filled.ArrowForward"
+                           OnClick="NavigateToSabadoSelect">
+                    Acessar
+                </MudButton>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+
+    private void NavigateToPessoaList()
+    {
+        UriHelper.NavigateTo("/service/escola-sabatina/pessoa/list");
+    }
+
+    private void NavigateToSabadoSelect()
+    {
+        UriHelper.NavigateTo("/service/escolasabatina/sabadoselect");
+    }
+}

@@ -1,0 +1,209 @@
+﻿@page "/service/escolasabatina/sabadoselect"
+@using Web.Database
+@using Web.Database.Model
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject IASBContext _dbContext
+@inject NavigationManager NavigationManager
+
+<PageTitle>Seleciona sábado do trimestre</PageTitle>
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-8">
+    <MudText Typo="Typo.h4" GutterBottom="true">Seleciona Sábado do Trimestre</MudText>
+    <MudText Typo="Typo.subtitle1" Class="mb-6">
+        Selecione o ano e o trimestre para gerar os sábados correspondentes.
+    </MudText>
+
+    <MudForm @ref="_form" @bind-IsValid="_formIsValid">
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="int" @bind-Value="Ano"
+                                 Min="DateTime.Now.Year - 10" Max="DateTime.Now.Year + 10"
+                                 Label="Ano" Placeholder="@($"Ex: {DateTime.Now.Year}")" Required="true"
+                                 RequiredError="O ano é obrigatório."
+                                 Validation="@(new Func<int, string>(ValidateAno))" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField T="int" @bind-Value="Trimestre"
+                                 Min="1" Max="4"
+                                 Label="Trimestre" Placeholder="Ex: 1" Required="true"
+                                 RequiredError="O trimestre é obrigatório."
+                                 Validation="@(new Func<int, string>(ValidateTrimestre))" />
+            </MudItem>
+            <MudItem xs="12" Class="d-flex justify-center mt-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.CalendarMonth"
+                           OnClick="GenerateSaturdays" Disabled="@(!_formIsValid || _generatingSaturdays)">
+                    @(_generatingSaturdays ? "Gerando..." : "Gerar Sábados")
+                </MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+
+    @if (_generatingSaturdays)
+    {
+        <div class="d-flex justify-center mt-8">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            <MudText Class="ml-4">Calculando sábados...</MudText>
+        </div>
+    }
+    else if (_generatedSaturdays.Any())
+    {
+        <MudCard Class="mt-8 pa-4">
+            <MudCardHeader>
+                <MudText Typo="Typo.h6">Sábados de @Ano/@(Trimestre.ToString("D2"))</MudText>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudText Typo="Typo.h6" Class="mb-4">Selecione o sábado:</MudText>
+                <MudExpansionPanels MultiExpansion="true" Class="mud-elevation-0">
+                    @foreach (var monthGroup in _generatedSaturdays.GroupBy(s => s.Month).OrderBy(g => g.Key))
+                    {
+                        <MudExpansionPanel Text="@GetMesAnoName(monthGroup.Key,Ano)">
+                            <MudGrid Spacing="2" Justify="Justify.FlexStart" Class="pt-4 pb-2">
+                                @foreach (var saturday in monthGroup.OrderBy(s => s.Day))
+                                {
+                                    <MudItem>
+                                        <MudChip T="string"
+                                                 OnClick="@Utils.DelegateHelper.Wrap(SelectSabado,saturday)"
+                                                 Variant="Variant.Filled" Size="Size.Large">
+                                            @saturday.ToString("dd/MM")
+                                        </MudChip>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        </MudExpansionPanel>
+                    }
+                </MudExpansionPanels>
+            </MudCardContent>
+            <MudCardActions Class="d-flex justify-end mt-4">
+                
+            </MudCardActions>
+        </MudCard>
+    }
+    else if (!_generatingSaturdays && Ano != 0 && Trimestre != 0) // Only show if user attempted to generate but no Saturdays found (e.g., invalid year/trimestre combo or future logic)
+    {
+        <MudText Typo="Typo.h6" Align="Align.Center" Class="my-8">Nenhum sábado encontrado para o período selecionado.</MudText>
+    }
+
+</MudContainer>
+
+<Web.Components.General.Loading IsLoading="selectingSabado" />
+
+@code {
+    public int Ano { get; set; } = DateTime.Now.Year;
+    public int Trimestre { get; set; } = (DateTime.Now.Month - 1) / 3 + 1; // Current trimester
+    public bool selectingSabado { get; set; } = false;
+    private MudForm _form;
+    private bool _formIsValid = true;
+    private bool _generatingSaturdays = false;
+
+    private List<DateTime> _generatedSaturdays = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initial validation for pre-filled values
+        _formIsValid = Ano > 0 && Trimestre >= 1 && Trimestre <= 4;
+        await GenerateSaturdays();
+    }
+
+    private string? ValidateAno(int year)
+    {
+        if (year <= 0)
+            return "O ano deve ser um valor positivo.";
+        if (year < DateTime.Now.Year - 10 || year > DateTime.Now.Year + 10)
+            return $"O ano deve estar entre {DateTime.Now.Year - 10} e {DateTime.Now.Year + 10}.";
+        return null;
+    }
+
+    private string? ValidateTrimestre(int trimester)
+    {
+        if (trimester < 1 || trimester > 4)
+            return "O trimestre deve ser entre 1 e 4.";
+        return null;
+    }
+
+    private async Task GenerateSaturdays()
+    {
+        _form?.Validate();
+        if (!_formIsValid)
+        {
+            Snackbar.Add("Por favor, corrija os erros no formulário.", Severity.Warning);
+            return;
+        }
+
+        _generatingSaturdays = true;
+        _generatedSaturdays.Clear();
+        StateHasChanged();
+
+        await Task.Delay(200); // Small delay for UI feedback
+
+        // Determine start and end months for the given trimester
+        _generatedSaturdays.AddRange(Utils.DateHelper.GetSabados(Ano, Trimestre));
+
+
+
+
+        _generatingSaturdays = false;
+        StateHasChanged();
+
+        if (!_generatedSaturdays.Any())
+        {
+            Snackbar.Add("Nenhum sábado encontrado para o período selecionado.", Severity.Info);
+        }
+        else
+        {
+            Snackbar.Add($"Sábados gerados e carregados para o Trimestre {Trimestre} de {Ano}.", Severity.Success);
+        }
+    }
+
+    private async Task SelectSabado(DateTime saturday)
+    {
+        selectingSabado = true;
+        StateHasChanged();
+        var index = this._generatedSaturdays.IndexOf(saturday) + 1;
+        if (index == 0)
+        {
+            selectingSabado = false;
+            StateHasChanged();
+            return;
+        }
+        var result = await _dbContext.Sabados.Where((e) => e.Trimestre == Trimestre && e.Ano == Ano && e.Index == index)
+            .FirstOrDefaultAsync();
+
+        if (result != null)
+        {
+            Snackbar.Add($"Sábado selecionado: {saturday:dd/MM/yyyy} (ID: {result.Id})", Severity.Success);
+            NavigationManager.NavigateTo($"/service/escolasabatina/chamada/?sabadoId={result.Id}");
+            selectingSabado = false;
+            StateHasChanged();
+        }
+        else
+        {
+
+            var resultv = await _dbContext.AddAsync(new Sabado
+            {
+                Ano = Ano,
+                Trimestre = Trimestre,
+                Index = index,
+                AlunosPresentes = 0,
+                EstudoDiarioBibliaLicao = 0,
+                OutrasAtividadesMissionarias = 0,
+                EstudosBiblicosDados=0,
+                ParticipacaoPequenoGrupo=0
+
+            });
+            await _dbContext.SaveChangesAsync();
+
+            var id = resultv.Entity.Id;
+            Snackbar.Add($"Sábado selecionado: {saturday:dd/MM/yyyy} (ID: {id})", Severity.Success);
+
+            selectingSabado = false;
+            StateHasChanged();
+            NavigationManager.NavigateTo($"/service/escolasabatina/chamada/?sabadoId={id}");
+
+
+        }
+    }
+
+    public string GetMesAnoName(int mes, int ano) => Utils.DateHelper.GetMesAnoName(mes,ano);
+
+}

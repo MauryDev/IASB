@@ -1,4 +1,6 @@
-﻿namespace Web.Services;
+﻿using MudBlazor;
+
+namespace Web.Services;
 
 public class FileService
 {
@@ -112,12 +114,13 @@ public class FileService
         return false;
     }
 
-    public bool Upload(string path, string name, byte[] bytes)
+    public bool Upload(string path, string name, MemoryStream bytes)
     {
         var realPath = GetPathInMusic(path);
         if (IsPathInsideBaseDirectory(realPath) && IsValidFilename(name))
         {
-            File.WriteAllBytes(Path.Combine(realPath, name), bytes);
+            using FileStream fileStream = new(Path.Combine(realPath, name), FileMode.Create, FileAccess.Write);
+            bytes.CopyTo(fileStream);
 
         }
         return false;
@@ -202,19 +205,64 @@ public class FileService
             }
         }
     }
-    public void GetProperty(string path, string destinationPath)
+    public string GetIconFile(string filename)
+    {
+        var pathExt = Path.GetExtension(filename).ToLower();
+        if (pathExt == ".txt")
+        {
+            return Icons.Material.Filled.Description;
+        }
+        else if (pathExt == ".jpg" || pathExt == ".png" || pathExt == ".jpeg" || pathExt == ".gif" || pathExt == ".bmp")
+        {
+            return Icons.Material.Filled.Image;
+        }
+        else if (pathExt == ".mp3" || pathExt == ".wav" && pathExt == ".ogg" || pathExt == ".flac" || pathExt == ".aac")
+        {
+            return Icons.Material.Filled.MusicNote;
+        }
+        else if (pathExt == ".mp4" || pathExt == ".avi" || pathExt == ".mkv" || pathExt == ".mov")
+        {
+            return Icons.Material.Filled.VideoLibrary;
+        }
+        else if (pathExt == ".pdf")
+        {
+            return Icons.Material.Filled.PictureAsPdf;
+        }
+        else if (pathExt == ".zip" || pathExt == ".rar" || pathExt == ".7z" || pathExt == ".tar" || pathExt == ".gz")
+        {
+            return Icons.Material.Filled.FolderZip;
+        }
+        return Icons.Material.Filled.InsertDriveFile;
+
+    }
+    public View.FileProperty? GetFileProperty(string path)
     {
         var realPath = GetPathInMusic(path);
         if (IsPathInsideBaseDirectory(realPath)
-            && Path.Exists(realPath))
+            && File.Exists(realPath))
         {
             var info = new FileInfo(realPath);
-            var name = info.Name;
-            var size = info.Length;
-            var test = info.CreationTime;
-            var d = info.DirectoryName;
-            
+
+            View.FileProperty inforet = new(info);
+            inforet.DirectoryName = Path.GetRelativePath(PathMusic, inforet.DirectoryName);
+            return inforet;
         }
+        return null;
+    }
+    public View.DirectoryProperty? GetDirectoryProperty(string path)
+    {
+        var realPath = GetPathInMusic(path);
+        if (IsPathInsideBaseDirectory(realPath)
+            && Directory.Exists(realPath))
+        {
+            var info = new DirectoryInfo(realPath);
+            var infoRet = new View.DirectoryProperty(info);
+            infoRet.DirectoryName = Path.GetRelativePath(PathMusic, infoRet.DirectoryName);
+
+            return infoRet;
+
+        }
+        return null;
     }
 
 }

@@ -1,0 +1,361 @@
+﻿@page "/service/escolasabatina/chamada"
+@using Web.Database
+@using Web.Database.Model
+@using Web.Database.Model.Enum
+@using Microsoft.EntityFrameworkCore
+@inject IASBContext _dbContext
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Chamada Escola Sabatina</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    @if (_isLoading)
+    {
+        <MudProgressCircular Indeterminate="true" Class="d-flex justify-center my-8" />
+        <MudText Typo="Typo.h6" Align="Align.Center">Carregando dados da chamada...</MudText>
+    }
+    else if (_sabado == null)
+    {
+        <MudText Typo="Typo.h5" Align="Align.Center" Class="my-8">Sábado não encontrado.</MudText>
+        <MudText Align="Align.Center">Por favor, verifique o ID do sábado na URL.</MudText>
+    }
+    else
+    {
+        <MudText Typo="Typo.h4" GutterBottom="true">Chamada do Sábado: @DiaMesAnoName</MudText>
+        <MudText Typo="Typo.subtitle1" Class="mb-6">
+            Preencha a presença dos alunos e as respostas para as perguntas do sábado.
+        </MudText>
+
+        <MudForm @ref="_chamadaForm">
+            <MudGrid>
+
+                <MudItem xs="12">
+                    <MudCard Elevation="25" Class="mb-6">
+                        <MudCardHeader>
+                            <MudText Typo="Typo.h6">Presença dos Alunos</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudCheckBox T="bool" @bind-Value="_showInactiveStudents" Label="Mostrar Alunos Inativos" Color="Color.Primary" Class="mb-4" />
+
+                            @if (!FilteredChamadas.Any())
+                            {
+                                <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="my-4">Nenhum aluno @(_showInactiveStudents ? "" : "ativo") encontrado.</MudText>
+                            }
+                            else
+                            {
+                                <MudTable Items="@FilteredChamadas"
+                                          Dense="true"
+                                          Hover="true"
+                                          FixedHeader="true"
+                                          Height="400px"
+                                          Breakpoint="Breakpoint.Sm"
+                                          Class="mt-4">
+                                    <HeaderContent>
+                                        <MudTh>Aluno</MudTh>
+                                        <MudTh Style="width: 200px; text-align: center;">Presença</MudTh>
+                                        
+                                    </HeaderContent>
+                                    <RowTemplate>
+                                        <MudTd DataLabel="Aluno">
+                                            @context.Pessoa.Nome
+                                            @if (!context.Pessoa.Ativo)
+                                            {
+                                                <MudChip T="string" Color="Color.Warning" Size="Size.Small" Class="ml-2">Inativo</MudChip>
+                                            }
+                                        </MudTd>
+                                        <MudTd DataLabel="Status">
+                                            <MudSelect T="PresencaAluno"
+                                                       @bind-Value="context.Presenca"
+                                                       Dense
+                                                       Margin="Margin.Dense"
+                                                       Variant="Variant.Outlined"
+                                                       InputClass="mb-2 justify-center"
+                                                        >
+                                                <MudSelectItem Value="PresencaAluno.None">
+                                                    <MudChip T="string" Color="Color.Dark" Size="Size.Small" Icon="@Icons.Material.Filled.Remove" Variant="Variant.Outlined">Não Definido</MudChip>
+                                                </MudSelectItem>
+                                                <MudSelectItem Value="PresencaAluno.Presente">
+                                                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.Check" Variant="Variant.Outlined">Presente</MudChip>
+                                                </MudSelectItem>
+                                                <MudSelectItem Value="PresencaAluno.Ausente">
+                                                    <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.Clear" Variant="Variant.Outlined">Faltou</MudChip>
+                                                </MudSelectItem>
+                                                <MudSelectItem Value="PresencaAluno.Presente7">
+                                                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Star" Variant="Variant.Outlined">Presente 7</MudChip>
+                                                </MudSelectItem>
+                                            </MudSelect>
+                                        </MudTd>
+                                    </RowTemplate>
+                                    <NoRecordsContent>
+                                        <MudText>Nenhum aluno corresponde aos critérios de exibição.</MudText>
+                                    </NoRecordsContent>
+                                    <LoadingContent>
+                                        <MudText>Carregando alunos...</MudText>
+                                    </LoadingContent>
+                                </MudTable>
+                            }
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudCard Elevation="25" Class="mb-6">
+                        <MudCardHeader>
+                            <MudText Typo="Typo.h6">Perguntas do Sábado</MudText>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudGrid>
+                                @foreach (var pergunta in _perguntas.OrderBy(p => p.Ordem))
+                                {
+                                    <MudItem xs="12" md="6">
+                                        <MudNumericField T="int"
+                                                         Label="@pergunta.Texto"
+                                                         Min="0"
+                                                         Value="@(GetSabadoQuestionPropertyValue(_sabado, pergunta.Id) ?? 0)"
+                                                         ValueChanged="(e) => SetSabadoQuestionPropertyValue(_sabado,pergunta.Id,e)"
+                                                         Variant="Variant.Outlined"
+                                                         FullWidth="true"
+                                                         Required="true"
+                                                         RequiredError="A resposta é obrigatória."
+                                                         Validation="@(new Func<int?, string>(value => value == null || value < 0 ? "O valor não pode ser negativo." : null))" />
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+
+                <MudItem xs="12" Class="d-flex justify-end gap-4 mt-4">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.RestartAlt" OnClick="ResetChamada" Disabled="@(_isSaving)">
+                        Resetar
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save" OnClick="SaveChamada" Disabled="@(!_chamadaForm.IsValid || _isSaving)">
+                        @(_isSaving ? "Salvando..." : "Salvar Chamada")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    }
+</MudContainer>
+
+
+    @code {
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "sabadoId")]
+    public int SabadoId { get; set; }
+
+    private Sabado _sabado;
+    private List<Database.Model.Pessoa> _pessoas = new();
+    private List<Pergunta> _perguntas = new();
+    private List<SabadoAluno> _chamadas = new();
+    private bool _showInactiveStudents = false;
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+    public DateTime CurrentSabado { get; set; }
+    private MudForm _chamadaForm;
+
+    // Campos para armazenar o estado inicial para a função de reset
+    private Sabado _initialSabadoState;
+    private Dictionary<int, PresencaAluno> _initialSabadoAlunoPresencas = new();
+
+    private IEnumerable<SabadoAluno> FilteredChamadas =>
+        _chamadas.Where(sa => _showInactiveStudents || sa.Pessoa.Ativo);
+
+
+    public string DiaMesAnoName => CurrentSabado.ToString("dd/MM/yyyy");
+    protected override async Task OnInitializedAsync()
+    {
+        if (SabadoId == 0)
+        {
+            Snackbar.Add("ID do sábado não fornecido na URL.", Severity.Error);
+            _isLoading = false;
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            // Load Sabado details
+            _sabado = await _dbContext.Sabados.FirstOrDefaultAsync(s => s.Id == SabadoId);
+            if (_sabado == null)
+            {
+                Snackbar.Add($"Sábado com ID {SabadoId} não encontrado.", Severity.Error);
+                return;
+            }
+            CurrentSabado = Utils.DateHelper.GetSabados(_sabado.Ano, _sabado.Trimestre)
+                .ElementAt(_sabado.Index - 1);
+            // Load all students (active and inactive)
+            _pessoas = await _dbContext.Pessoas.OrderBy(p => p.Nome).ToListAsync();
+
+            // Load all questions
+            _perguntas = await _dbContext.Perguntas.OrderBy(p => p.Ordem).ToListAsync();
+
+            // Load existing attendance records for this Sabado
+            var existingChamadas = await _dbContext.SabadoAlunos
+                .Where(sa => sa.SabadoId == SabadoId)
+                .Include(sa => sa.Pessoa) // Include Pessoa to filter by Ativo later
+                .ToListAsync();
+
+            // Populate _chamadas list
+            _chamadas = new ();
+            foreach (var pessoa in _pessoas)
+            {
+                var existing = existingChamadas.FirstOrDefault(ec => ec.PessoaId == pessoa.Id);
+                _chamadas.Add(existing ?? new()
+                {
+                    SabadoId = SabadoId,
+                    PessoaId = pessoa.Id,
+                    Pessoa = pessoa,
+                    Presenca = PresencaAluno.None
+                });
+            }
+
+            // Store initial state for reset
+            _initialSabadoState = (Sabado)_sabado.Clone(); // Shallow copy for Sabado
+            foreach (var chamada in _chamadas)
+            {
+                _initialSabadoAlunoPresencas[chamada.PessoaId] = chamada.Presenca;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar dados: {ex.Message}", Severity.Error);
+            _sabado = null; // Indicate failure to load
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+
+    // Helper method to bind integer properties of Sabado based on Pergunta.Id
+    private int? GetSabadoQuestionPropertyValue(Sabado sabado, int perguntaId)
+    {
+        return perguntaId switch
+        {
+            1 => sabado.AlunosPresentes,
+            2 => sabado.EstudoDiarioBibliaLicao,
+            3 => sabado.ParticipacaoPequenoGrupo,
+            4 => sabado.EstudosBiblicosDados,
+            5 => sabado.OutrasAtividadesMissionarias,
+            _ => null,
+        };
+    }
+
+    // Helper method to set integer properties of Sabado based on Pergunta.Id
+    private void SetSabadoQuestionPropertyValue(Sabado sabado, int perguntaId, int? value)
+    {
+        int val = value ?? 0; // Default to 0 if null
+        switch (perguntaId)
+        {
+            case 1:
+                sabado.AlunosPresentes = val;
+                break;
+            case 2:
+                sabado.EstudoDiarioBibliaLicao = val;
+                break;
+            case 3:
+                sabado.ParticipacaoPequenoGrupo = val;
+                break;
+            case 4:
+                sabado.EstudosBiblicosDados = val;
+                break;
+            case 5:
+                sabado.OutrasAtividadesMissionarias = val;
+                break;
+        }
+    }
+
+    private async Task SaveChamada()
+    {
+        await _chamadaForm.Validate();
+        if (!_chamadaForm.IsValid)
+        {
+            Snackbar.Add("Por favor, corrija os erros no formulário antes de salvar.", Severity.Warning);
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            // Handle Sabado (questions)
+            _dbContext.Sabados.Update(_sabado);
+
+
+            // Handle SabadoAluno (attendance)
+            foreach (var chamada in _chamadas)
+            {
+                var existingEntry = await _dbContext.SabadoAlunos
+                    .FirstOrDefaultAsync(sa => sa.SabadoId == chamada.SabadoId && sa.PessoaId == chamada.PessoaId);
+
+                if (existingEntry == null)
+                {
+                    // Create new entry if it doesn't exist AND has valid presence
+                    if (chamada.Presenca != PresencaAluno.None)
+                    {
+                        _dbContext.SabadoAlunos.Add(chamada);
+                    }
+                }
+                else
+                {
+                    // Update existing entry
+                    if (chamada.Presenca == PresencaAluno.None)
+                    {
+                        // Delete if presence is None and an entry existed
+                        _dbContext.SabadoAlunos.Remove(existingEntry);
+                    }
+                    else if (existingEntry.Presenca != chamada.Presenca)
+                    {
+                        // Update if presence changed
+                        _dbContext.SabadoAlunos.Update(chamada);
+                    }
+                }
+            }
+
+            await _dbContext.SaveChangesAsync();
+            Snackbar.Add("Chamada salva com sucesso!", Severity.Success);
+
+            // Re-store initial state after successful save
+            _initialSabadoState = (Sabado)_sabado.Clone();
+            foreach (var chamada in _chamadas)
+            {
+                _initialSabadoAlunoPresencas[chamada.PessoaId] = chamada.Presenca;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar a chamada: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ResetChamada()
+    {
+        // Reset Sabado questions
+        if (_sabado != null && _initialSabadoState != null)
+        {
+            _sabado.AlunosPresentes = _initialSabadoState.AlunosPresentes;
+            _sabado.EstudoDiarioBibliaLicao = _initialSabadoState.EstudoDiarioBibliaLicao;
+            _sabado.ParticipacaoPequenoGrupo = _initialSabadoState.ParticipacaoPequenoGrupo;
+            _sabado.EstudosBiblicosDados = _initialSabadoState.EstudosBiblicosDados;
+            _sabado.OutrasAtividadesMissionarias = _initialSabadoState.OutrasAtividadesMissionarias;
+        }
+
+        // Reset SabadoAluno presences
+        foreach (var chamada in _chamadas)
+        {
+            if (_initialSabadoAlunoPresencas.TryGetValue(chamada.PessoaId, out var initialPresenca))
+            {
+                chamada.Presenca = initialPresenca;
+            }
+        }
+        Snackbar.Add("Chamada resetada para o estado inicial.", Severity.Info);
+        StateHasChanged();
+    }
+}

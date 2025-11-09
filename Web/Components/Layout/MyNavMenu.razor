@@ -1,14 +1,19 @@
-﻿<MudNavMenu>
+﻿<MudNavMenu Class="mt-2">
+
+    <MudText Typo="Typo.h6" Class="px-4">IASB</MudText>
+    <MudDivider Class="my-2"/>
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
 
     <MudNavGroup Title="Recursos" Icon="@Icons.Material.Filled.Category">
         <MudNavLink Href="/service/informativo" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Article">Informativo</MudNavLink>
         <MudNavLink Href="/service/provaivede" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Visibility">Provai e vede</MudNavLink>
-        <MudNavLink Href="/service/youtube" Match="NavLinkMatch.Prefix" Icon="@Icons.Custom.Brands.YouTube">Provai e vede</MudNavLink>
+        <MudNavLink Href="/service/youtube" Match="NavLinkMatch.Prefix" Icon="@Icons.Custom.Brands.YouTube">YouTube</MudNavLink>
 
     </MudNavGroup>
 
     <MudNavGroup Title="Gerenciamento" Icon="@Icons.Material.Filled.FolderShared">
         <MudNavLink Href="/service/filesystem" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Folder">Arquivos</MudNavLink>
+        <MudNavLink Href="/service/escolasabatina" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.School">Escola Sabatina</MudNavLink>
+
     </MudNavGroup>
 </MudNavMenu>

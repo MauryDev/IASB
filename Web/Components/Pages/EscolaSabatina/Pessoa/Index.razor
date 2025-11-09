@@ -1,0 +1,191 @@
+﻿@page "/service/escola-sabatina/pessoa/list"
+@inject IDbContextFactory<Database.IASBContext> ScopeFactory
+@using Web.Database
+@using Web.Database.Model
+@using Microsoft.EntityFrameworkCore
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-8">
+    <MudText Typo="Typo.h4" GutterBottom="true">Gerenciamento de Alunos</MudText>
+    <MudText Typo="Typo.subtitle1" Class="mb-6">Visualize, adicione, edite ou remova alunos.</MudText>
+
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" OnClick="OpenCreateDialog">Adicionar Aluno</MudButton>
+        </MudItem>
+        <MudItem xs="12" sm="6" Class="d-flex justify-sm-end">
+            <MudButton Variant="Variant.Outlined" Color="Color.Info" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadPessoas">Atualizar Lista</MudButton>
+        </MudItem>
+    </MudGrid>
+
+    @if (_loading)
+    {
+        <MudProgressCircular Indeterminate="true" Class="d-flex justify-center my-8" />
+        <MudText Align="Align.Center">Carregando alunos...</MudText>
+    }
+    else if (_pessoas == null || !_pessoas.Any())
+    {
+        <MudText Align="Align.Center" Typo="Typo.h6" Class="my-8">Nenhum aluno encontrado.</MudText>
+        <MudText Align="Align.Center">Clique em "Adicionar Aluno" para começar, ou "Atualizar Lista" para tentar novamente.</MudText>
+    }
+    else
+    {
+        <MudTable Items="@_pessoas"
+                  Hover="true"
+                  SortLabel="Ordenação"
+                  FixedHeader="true"
+                  Breakpoint="Breakpoint.Sm"
+                  Dense="true"
+                  
+                  Class="mt-4">
+            <ToolBarContent>
+                <MudText Typo="Typo.h6">Pessoas</MudText>
+                <MudSpacer />
+                <MudTextField @bind-Value="_searchString" Placeholder="Buscar" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>
+                    <MudTableSortLabel T="Pessoa" InitialDirection="SortDirection.Ascending" SortBy="new Func<Pessoa, object>(x => x.Nome)" >Nome</MudTableSortLabel>
+                </MudTh>
+                <MudTh>
+                    <MudTableSortLabel T="Pessoa" InitialDirection="SortDirection.Ascending" SortBy="new Func<Pessoa, object>(x => x.Ativo)">Ativo</MudTableSortLabel>
+                </MudTh>
+                
+                <MudTh Style="width:200px;">Ações</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nome">@context.Nome</MudTd>
+                <MudTd DataLabel="Status">
+                    @if (context.Ativo)
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.CheckCircleOutline" Variant="Variant.Outlined">Ativo</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Icon="@Icons.Material.Filled.DisabledByDefault" Variant="Variant.Outlined">Inativo</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Ações">
+                    <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Primary" Size="Size.Medium" OnClick="@(() => OpenViewDialog(context))" Title="Visualizar" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Secondary" Size="Size.Medium" OnClick="@(() => OpenUpdateDialog(context))" Title="Editar" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Medium" OnClick="@(() => OpenDeleteDialog(context))" Title="Deletar" />
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[]{10, 20, 50}" />
+            </PagerContent>
+        </MudTable>
+    }
+</MudContainer>
+
+@code {
+    private List<Pessoa> _pessoas;
+    private string _searchString = "";
+    private bool _loading = true;
+
+    [Inject]
+    private IASBContext _dbContext { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPessoas();
+    }
+
+    private async Task LoadPessoas()
+    {
+        _loading = true;
+        try
+        {
+            _pessoas = await _dbContext.Pessoas.OrderBy(p => p.Nome).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar pessoas: {ex.Message}", Severity.Error);
+            _pessoas = new List<Pessoa>(); // Ensure _pessoas is not null
+        }
+        finally
+        {
+            _loading = false;
+        }
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialog()
+    {
+        var dialog = await DialogService.ShowAsync<Web.Components.Pages.EscolaSabatina.Pessoa.Create>("Adicionar Novo Aluno");
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Pessoa newPessoa)
+        {
+            try
+            {
+                _dbContext.Pessoas.Add(newPessoa);
+                await _dbContext.SaveChangesAsync();
+                Snackbar.Add("Aluno criado com sucesso!", Severity.Success);
+                await LoadPessoas(); // Reload data after creation
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao criar aluno: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenViewDialog(Pessoa pessoa)
+    {
+        var parameters = new DialogParameters { ["Pessoa"] = pessoa };
+        await DialogService.ShowAsync<Web.Components.Pages.EscolaSabatina.Pessoa.View>("Visualizar Aluno", parameters, new DialogOptions { FullWidth = true });
+        // No need to handle result for view operation
+    }
+
+    private async Task OpenUpdateDialog(Pessoa pessoa)
+    {
+        var parameters = new DialogParameters { ["Pessoa"] =
+            new Pessoa { Id = pessoa.Id, Nome = pessoa.Nome, Ativo = pessoa.Ativo } // Create a copy to avoid immediate changes to original list
+        };
+        var dialog = await DialogService.ShowAsync<Web.Components.Pages.EscolaSabatina.Pessoa.Update>("Editar Aluno", parameters, new DialogOptions { FullWidth = true });
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Pessoa updatedPessoa)
+        {
+            try
+            {
+                var originalPessoa = _pessoas.FirstOrDefault(p => p.Id == updatedPessoa.Id);
+                if (originalPessoa != null)
+                {
+                    _dbContext.Entry(originalPessoa).CurrentValues.SetValues(updatedPessoa);
+                    await _dbContext.SaveChangesAsync();
+                    Snackbar.Add("Aluno atualizado com sucesso!", Severity.Success);
+                    await LoadPessoas(); // Reload data after update
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao atualizar aluno: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenDeleteDialog(Pessoa pessoa)
+    {
+        var parameters = new DialogParameters { ["Pessoa"] = pessoa };
+        var dialog = await DialogService.ShowAsync<Web.Components.Pages.EscolaSabatina.Pessoa.Delete>("Confirmar Exclusão", parameters, new DialogOptions { FullWidth = true });
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is Pessoa pessoaToDelete)
+        {
+            try
+            {
+                _dbContext.Pessoas.Remove(pessoaToDelete);
+                await _dbContext.SaveChangesAsync();
+                Snackbar.Add("Aluno deletado com sucesso!", Severity.Success);
+                await LoadPessoas(); // Reload data after deletion
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao deletar aluno: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+}
